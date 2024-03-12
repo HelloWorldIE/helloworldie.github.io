@@ -1,95 +1,93 @@
-// Ensure the DOM is fully loaded before executing
+// Wait for the DOM content to be fully loaded before executing the script
 document.addEventListener('DOMContentLoaded', () => {
-    fetchRepositories();
+    fetchRepositories(); // Initial call to fetch and display repositories
 });
 
 /**
- * Fetches the GitHub repositories for the specified user and displays them.
+ * Fetches repositories from GitHub API and displays them on the page.
  */
 async function fetchRepositories() {
-    const container = document.getElementById('repository-container');
-    const response = await fetch('https://api.github.com/users/helloworldie/repos');
-    const repositories = await response.json();
+    const container = document.getElementById('repository-container'); // Container for repository tiles
+    const response = await fetch('https://api.github.com/users/helloworldie/repos'); // Fetch repositories
+    const repositories = await response.json(); // Parse the JSON response
 
+    // Iterate over each repository and create a display tile
     repositories.forEach(async (repo) => {
-        const tile = createRepositoryTile(repo);
-        container.appendChild(tile);
+        const tile = await createRepositoryTile(repo); // Create a tile for each repository
+        container.appendChild(tile); // Append the tile to the container
     });
 }
 
 /**
- * Creates a tile for a repository.
- * @param {Object} repo The repository object from GitHub's API.
- * @returns {HTMLElement} The repository tile element.
+ * Creates a tile element for a repository, including the featured image and a preview button.
+ * @param {Object} repo - The repository object from GitHub's API.
+ * @returns {Promise<HTMLElement>} The repository tile element.
  */
-function createRepositoryTile(repo) {
+async function createRepositoryTile(repo) {
     const tile = document.createElement('div');
     tile.className = 'repository-tile';
 
-    // Feature image handling
-    const imageName = 'featured_image.png';
-    const imageUrl = `${repo.html_url}/raw/main/${imageName}`;
+    // Attempt to set a featured image or a placeholder
     const imageDiv = document.createElement('div');
     imageDiv.className = 'repository-image';
-    setImageBackground(imageDiv, imageUrl, repo.name).then(() => tile.appendChild(imageDiv));
+    await setImageBackground(imageDiv, repo);
+    tile.appendChild(imageDiv);
 
+    // Add the repository name to the tile
     const repoName = document.createElement('p');
     repoName.textContent = repo.name;
     tile.appendChild(repoName);
 
-    // Preview button for GitHub Pages
-    const githubPagesUrl = `https://${repo.owner.login}.github.io/${repo.name}/`;
-    createPreviewButton(githubPagesUrl).then((button) => {
-        if (button) tile.appendChild(button);
-    });
+    // Attempt to create and add a preview button if applicable
+    const previewButton = await createPreviewButton(repo);
+    if (previewButton) tile.appendChild(previewButton);
 
     return tile;
 }
 
 /**
- * Attempts to set an image background, falling back to a placeholder if the image doesn't exist.
- * @param {HTMLElement} div The div to set the background image for.
- * @param {string} imageUrl The URL of the image to set as the background.
- * @param {string} repoName The name of the repository for placeholder generation.
+ * Sets the background of a div to the repository's featured image or a placeholder if the image doesn't exist.
+ * @param {HTMLElement} div - The div to set the background image for.
+ * @param {Object} repo - The repository object from GitHub's API.
  */
-async function setImageBackground(div, imageUrl, repoName) {
-    const imageExists = await imageExistsOnRepo(imageUrl);
-    if (imageExists) {
-        div.style.backgroundImage = `url('${imageUrl}')`;
-    } else {
-        // Placeholder logic can be enhanced with a dynamic image generator
-        div.className = 'placeholder-image';
-        div.style.backgroundImage = `url('https://via.placeholder.com/200x200?text=${repoName}')`;
-    }
-}
+async function setImageBackground(div, repo) {
+    const apiUrl = `https://api.github.com/repos/${repo.owner.login}/${repo.name}/contents/featured_image.png?ref=main`;
 
-/**
- * Checks if an image or file exists at the specified URL.
- * @param {string} url The URL to check.
- * @returns {Promise<boolean>} True if the image exists, false otherwise.
- */
-async function imageExistsOnRepo(url) {
     try {
-        const response = await fetch(url, { method: 'HEAD' });
-        return response.ok;
+        const response = await fetch(apiUrl);
+        if (response.ok) {
+            const data = await response.json();
+            div.style.backgroundImage = `url(${data.download_url})`;
+        } else {
+            throw new Error('Image not found');
+        }
     } catch (error) {
-        return false;
+        // Set a placeholder image if the featured image doesn't exist or an error occurs
+        div.style.backgroundImage = `url('https://via.placeholder.com/200x200?text=${repo.name}')`;
     }
 }
 
 /**
- * Creates a preview button if an index.html exists in the repository's GitHub Pages.
- * @param {string} githubPagesUrl The GitHub Pages URL of the repository.
- * @returns {Promise<HTMLElement|null>} The button element or null if index.html doesn't exist.
+ * Creates a preview button for a repository if it has a GitHub Pages site.
+ * @param {Object} repo - The repository object from GitHub's API.
+ * @returns {Promise<HTMLElement|null>} A button element or null if the repository does not have a GitHub Pages site.
  */
-async function createPreviewButton(githubPagesUrl) {
-    const indexHtmlExists = await imageExistsOnRepo(`${githubPagesUrl}index.html`);
-    if (indexHtmlExists) {
-        const button = document.createElement('button');
-        button.className = 'preview-button';
-        button.textContent = 'Preview';
-        button.onclick = () => window.open(githubPagesUrl, '_blank');
-        return button;
+async function createPreviewButton(repo) {
+    const githubPagesUrl = `https://${repo.owner.login}.github.io/${repo.name}/`;
+    // Check if GitHub Pages site exists by attempting to fetch the index.html
+    try {
+        const response = await fetch(githubPagesUrl + 'index.html', { method: 'HEAD' });
+        if (response.ok) {
+            const button = document.createElement('button');
+            button.className = 'preview-button';
+            button.textContent = 'Preview';
+            button.onclick = () => window.open(githubPagesUrl, '_blank');
+            return button;
+        } else {
+            throw new Error('GitHub Pages site not found');
+        }
+    } catch (error) {
+        // Return null if no GitHub Pages site exists or an error occurs
+        return null;
     }
-    return null;
 }
