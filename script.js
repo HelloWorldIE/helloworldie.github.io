@@ -1,70 +1,95 @@
-// Wait for the DOM to fully load before executing
+// Ensure the DOM is fully loaded before executing
 document.addEventListener('DOMContentLoaded', () => {
-    fetchRepositories(); // Call the function to start fetching repositories
+    fetchRepositories();
 });
 
-// Fetches repositories for a specified user
+/**
+ * Fetches the GitHub repositories for the specified user and displays them.
+ */
 async function fetchRepositories() {
     const container = document.getElementById('repository-container');
-    // Fetch repositories from GitHub API
     const response = await fetch('https://api.github.com/users/helloworldie/repos');
-    const repositories = await response.json(); // Parse the JSON response
+    const repositories = await response.json();
 
-    // Iterate over each repository
-    for (const repo of repositories) {
-        // Create a new div element for this repository
-        const tile = document.createElement('div');
-        tile.className = 'repository-tile';
-
-        // Attempt to load a featured image for the repository
-        const imageName = 'featured_image.png';
-        const imageUrl = `${repo.html_url}/raw/main/${imageName}`;
-        const imageExists = await imageExistsOnRepo(imageUrl);
-
-        // If the image exists, display it
-        if (imageExists) {
-            const image = document.createElement('div');
-            image.className = 'repository-image';
-            image.style.backgroundImage = `url('${imageUrl}')`;
-            tile.appendChild(image);
-        }
-
-        // Display the repository's name
-        const repoName = document.createElement('p');
-        repoName.textContent = repo.name;
-        tile.appendChild(repoName);
-
-        // Check if index.html exists for previewing
-        const indexHtmlUrl = `${repo.html_url}/blob/main/index.html`;
-        const indexHtmlExists = await imageExistsOnRepo(indexHtmlUrl.replace('/blob/', '/raw/')); // Using raw URL for checking
-
-        // If index.html exists, add a preview button
-        if (indexHtmlExists) {
-            const previewButton = document.createElement('button');
-            previewButton.className = 'preview-button';
-            previewButton.textContent = 'Preview';
-            previewButton.onclick = () => openPreview(indexHtmlUrl); // Function to handle preview
-            tile.appendChild(previewButton);
-        }
-
-        // Add the completed tile to the container
+    repositories.forEach(async (repo) => {
+        const tile = createRepositoryTile(repo);
         container.appendChild(tile);
+    });
+}
+
+/**
+ * Creates a tile for a repository.
+ * @param {Object} repo The repository object from GitHub's API.
+ * @returns {HTMLElement} The repository tile element.
+ */
+function createRepositoryTile(repo) {
+    const tile = document.createElement('div');
+    tile.className = 'repository-tile';
+
+    // Feature image handling
+    const imageName = 'featured_image.png';
+    const imageUrl = `${repo.html_url}/raw/main/${imageName}`;
+    const imageDiv = document.createElement('div');
+    imageDiv.className = 'repository-image';
+    setImageBackground(imageDiv, imageUrl, repo.name).then(() => tile.appendChild(imageDiv));
+
+    const repoName = document.createElement('p');
+    repoName.textContent = repo.name;
+    tile.appendChild(repoName);
+
+    // Preview button for GitHub Pages
+    const githubPagesUrl = `https://${repo.owner.login}.github.io/${repo.name}/`;
+    createPreviewButton(githubPagesUrl).then((button) => {
+        if (button) tile.appendChild(button);
+    });
+
+    return tile;
+}
+
+/**
+ * Attempts to set an image background, falling back to a placeholder if the image doesn't exist.
+ * @param {HTMLElement} div The div to set the background image for.
+ * @param {string} imageUrl The URL of the image to set as the background.
+ * @param {string} repoName The name of the repository for placeholder generation.
+ */
+async function setImageBackground(div, imageUrl, repoName) {
+    const imageExists = await imageExistsOnRepo(imageUrl);
+    if (imageExists) {
+        div.style.backgroundImage = `url('${imageUrl}')`;
+    } else {
+        // Placeholder logic can be enhanced with a dynamic image generator
+        div.className = 'placeholder-image';
+        div.style.backgroundImage = `url('https://via.placeholder.com/200x200?text=${repoName}')`;
     }
 }
 
-// Checks if a given URL for an image or file exists
+/**
+ * Checks if an image or file exists at the specified URL.
+ * @param {string} url The URL to check.
+ * @returns {Promise<boolean>} True if the image exists, false otherwise.
+ */
 async function imageExistsOnRepo(url) {
     try {
-        // Perform a HEAD request to check for the file's existence
         const response = await fetch(url, { method: 'HEAD' });
-        return response.ok; // true if status is 200-299
+        return response.ok;
     } catch (error) {
         return false;
     }
 }
 
-// Opens a preview of the repository's index.html in a new tab
-function openPreview(url) {
-    const previewWindow = window.open('', '_blank'); // Open a new blank tab
-    previewWindow.location = url.replace('/blob/', '/raw/'); // Adjust URL for direct access
+/**
+ * Creates a preview button if an index.html exists in the repository's GitHub Pages.
+ * @param {string} githubPagesUrl The GitHub Pages URL of the repository.
+ * @returns {Promise<HTMLElement|null>} The button element or null if index.html doesn't exist.
+ */
+async function createPreviewButton(githubPagesUrl) {
+    const indexHtmlExists = await imageExistsOnRepo(`${githubPagesUrl}index.html`);
+    if (indexHtmlExists) {
+        const button = document.createElement('button');
+        button.className = 'preview-button';
+        button.textContent = 'Preview';
+        button.onclick = () => window.open(githubPagesUrl, '_blank');
+        return button;
+    }
+    return null;
 }
