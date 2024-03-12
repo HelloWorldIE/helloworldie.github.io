@@ -1,0 +1,33 @@
+/* Container for all repository tiles */
+#repository-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px; /* Space between tiles */
+    justify-content: center; /* Center tiles horizontally */
+}
+
+/* Styling for each repository tile */
+.repository-tile {
+    border: 1px solid #ddd; /* Light grey border */
+    padding: 10px;
+    width: 300px; /* Fixed width */
+    text-align: center; /* Center text */
+}
+
+/* The div that will display the repository's featured image */
+.repository-image {
+    width: 100%; /* Full width of its parent */
+    height: 200px; /* Fixed height */
+    background-size: cover; /* Cover the entire area without stretching */
+    background-position: center; /* Center the background image */
+}
+
+/* Styling for the preview button */
+.preview-button {
+    margin-top: 10px;
+    padding: 5px 10px;
+    background-color: #007bff; /* Blue background */
+    color: white; /* White text */
+    border: none; /* No border */
+    cursor: pointer; /* Pointer cursor on hover */
+}
