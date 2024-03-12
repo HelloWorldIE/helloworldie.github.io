@@ -1,33 +1,45 @@
-/* Container for all repository tiles */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+header, #features {
+    padding: 20px;
+    text-align: center;
+}
+
 #repository-container {
     display: flex;
     flex-wrap: wrap;
-    gap: 20px; /* Space between tiles */
-    justify-content: center; /* Center tiles horizontally */
+    gap: 20px;
+    justify-content: center;
+    padding: 20px;
 }
 
-/* Styling for each repository tile */
 .repository-tile {
-    border: 1px solid #ddd; /* Light grey border */
+    border: 1px solid #ddd;
     padding: 10px;
-    width: 300px; /* Fixed width */
-    text-align: center; /* Center text */
+    width: 300px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
-/* The div that will display the repository's featured image */
-.repository-image {
-    width: 100%; /* Full width of its parent */
-    height: 200px; /* Fixed height */
-    background-size: cover; /* Cover the entire area without stretching */
-    background-position: center; /* Center the background image */
+.repository-image, .placeholder-image {
+    width: 100%;
+    height: 200px;
+    background-size: cover;
+    background-position: center;
 }
 
-/* Styling for the preview button */
 .preview-button {
     margin-top: 10px;
     padding: 5px 10px;
-    background-color: #007bff; /* Blue background */
-    color: white; /* White text */
-    border: none; /* No border */
-    cursor: pointer; /* Pointer cursor on hover */
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
 }
