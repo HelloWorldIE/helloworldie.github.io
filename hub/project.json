@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "name": "Repository Hub",
+  "tagline": "Find every HelloWorld project, read about it, try its demo and browse its code",
+  "summary": "The page you are on. It reads the HelloWorldIE GitHub account at run time and shows each project from its hub card: pictures, guides, demo, README and code. Signed out it shows public projects; a read-only token adds the private ones.",
+  "category": "ops",
+  "kind": "website",
+  "status": "live",
+  "audience": ["internal"],
+  "features": [
+    "Browse projects by category, kind, status and language",
+    "Open a project's demo in a sealed frame",
+    "Read the README and browse the code",
+    "See every project on a 3D planet",
+    "Check which repos still need a hub card"
+  ],
+  "built_with": ["Vanilla JS", "three.js", "GitHub REST and GraphQL APIs", "GitHub Pages"],
+  "live_url": "https://helloworldie.github.io/",
+  "no_demo": "The hub is itself live at its own address.",
+  "updated": "2026-11-26"
+}

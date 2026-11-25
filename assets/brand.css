@@ -1,0 +1,163 @@
+/* HelloWorld hub: brand tokens and base elements.
+   Palette and type from the HelloWorld brand guide: Signal Violet #6d44e0 (accent, ~10-13% of a
+   layout), Deep Violet #4a2bb0 (sparing), Bright Violet #a98bff (accent on dark), Ink #262430,
+   Void #15121d, Paper off-white. Plus Jakarta Sans only; monospace only for code.
+   Light is the default; dark is a full, equal surface chosen with the switch (data-theme). */
+
+:root {
+  color-scheme: light;
+  --bg: #f8f7fb;            /* paper */
+  --bg-2: #f0eef5;          /* paper-2, faint panel */
+  --surface: #ffffff;
+  --surface-2: #faf9fd;
+  --line: #e3e0ec;          /* mist */
+  --line-strong: #cfcadc;
+  --ink: #262430;
+  --ink-2: #4a4757;
+  --dim: #5f5b6e;           /* muted text, AA on paper */
+  --faint: #8d89a0;         /* decoration only, never body text */
+  --accent: #6d44e0;        /* Signal Violet, AA on white */
+  --accent-ink: #ffffff;
+  --accent-strong: #4a2bb0; /* Deep Violet */
+  --accent-soft: #efe9ff;
+  --accent-line: #d9cdfc;
+  --eye: #0a8043;           /* the bot's eyes */
+  --ok: #0a8043;
+  --warn: #9a6200;
+  --bad: #b3261e;
+  --stage: #15121d;         /* the dark stage behind the dashboard, in both themes */
+  --stage-2: #1d1a27;
+  --stage-ink: #f6f5fa;
+  --stage-dim: #aaa6b8;
+  --stage-accent: #a98bff;
+  --shadow: 0 1px 2px rgba(21, 18, 29, .06), 0 8px 24px rgba(21, 18, 29, .06);
+  --shadow-lg: 0 2px 6px rgba(21, 18, 29, .08), 0 24px 60px rgba(21, 18, 29, .14);
+  --radius: 14px;
+  --radius-sm: 9px;
+  --font: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace; /* code only */
+  --maxw: 1320px;
+  --gutter: clamp(16px, 4vw, 40px);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #15121d;
+  --bg-2: #1a1724;
+  --surface: #1d1a27;
+  --surface-2: #221e2e;
+  --line: rgba(255, 255, 255, .10);
+  --line-strong: rgba(255, 255, 255, .18);
+  --ink: #f6f5fa;
+  --ink-2: #d9d6e3;
+  --dim: #aaa6b8;
+  --faint: #77738a;
+  --accent: #a98bff;
+  --accent-ink: #15121d;
+  --accent-strong: #c4b1ff;
+  --accent-soft: rgba(169, 139, 255, .14);
+  --accent-line: rgba(169, 139, 255, .35);
+  --eye: #2ed47f;
+  --ok: #2ed47f;
+  --warn: #f0b440;
+  --bad: #ff8a80;
+  --stage: #0f0d16;
+  --stage-2: #171421;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+  --shadow-lg: 0 2px 6px rgba(0, 0, 0, .35), 0 24px 60px rgba(0, 0, 0, .45);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; overflow-x: clip; }
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: clip;
+}
+img, svg, canvas { display: block; max-width: 100%; }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:hover { color: var(--accent-strong); }
+button, input, select, textarea { font: inherit; color: inherit; }
+code, pre, kbd, samp { font-family: var(--mono); font-size: .9em; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+::selection { background: var(--accent-soft); }
+
+[hidden] { display: none !important; }
+
+.sr-only {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* Eyebrow labels: tracked uppercase Jakarta, never monospace (brand rule). */
+.eyebrow {
+  font-size: 11.5px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase;
+  color: var(--dim);
+}
+
+/* The bot mark. Head uses currentColor, eyes use --eye. */
+.hw-bot { width: 34px; height: 34px; color: var(--ink); flex: none; }
+.hw-bot .eyes { fill: var(--eye); transform-box: fill-box; transform-origin: center; }
+@media (prefers-reduced-motion: no-preference) {
+  .hw-bot.is-alive .eyes { animation: hw-look 7s ease-in-out infinite; }
+  .hw-bot.is-alive .eye { animation: hw-blink 5.5s infinite; transform-box: fill-box; transform-origin: center; }
+}
+@keyframes hw-look {
+  0%, 38%, 100% { transform: translateX(0); }
+  44%, 56% { transform: translateX(-7%); }
+  62%, 74% { transform: translateX(6%); }
+}
+@keyframes hw-blink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(.1); }
+}
+
+/* Buttons. Rounded elements have a full border or none, never one side. */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 38px; padding: 8px 16px; border-radius: 999px;
+  border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink);
+  font-weight: 650; font-size: 14px; line-height: 1; text-decoration: none; cursor: pointer; white-space: nowrap;
+  transition: background .15s, border-color .15s, color .15s, transform .15s;
+}
+.btn:hover { border-color: var(--accent); color: var(--ink); }
+.btn:active { transform: translateY(1px); }
+.btn[disabled] { opacity: .55; cursor: not-allowed; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn-primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); color: var(--accent-ink); }
+.btn-ghost { background: transparent; border-color: transparent; }
+.btn-ghost:hover { background: var(--bg-2); border-color: var(--line); }
+.btn-sm { min-height: 30px; padding: 5px 12px; font-size: 13px; }
+.btn-icon { width: 38px; padding: 0; }
+.btn svg { width: 18px; height: 18px; flex: none; }
+
+/* Chips and badges */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-2);
+  font-size: 12.5px; font-weight: 600; line-height: 1.5; white-space: nowrap;
+}
+.chip-accent { border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-strong); }
+:root[data-theme="dark"] .chip-accent { color: var(--accent); }
+.chip-ok { border-color: color-mix(in srgb, var(--ok) 40%, transparent); color: var(--ok); background: color-mix(in srgb, var(--ok) 10%, transparent); }
+.chip-warn { border-color: color-mix(in srgb, var(--warn) 40%, transparent); color: var(--warn); background: color-mix(in srgb, var(--warn) 10%, transparent); }
+.chip-dim { color: var(--dim); }
+.dot { width: 9px; height: 9px; border-radius: 50%; flex: none; display: inline-block; }
+
+/* Form fields */
+.field {
+  width: 100%; min-height: 40px; padding: 8px 14px; border-radius: 999px;
+  border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink);
+}
+.field:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+textarea.field { border-radius: var(--radius-sm); min-height: 90px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+}

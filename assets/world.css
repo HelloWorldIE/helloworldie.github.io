@@ -1,0 +1,96 @@
+/* HelloWorld hub: the World view (assets/world.js). Every class starts with hww-.
+   The stage is dark in both themes, so the panels use the --stage tokens. */
+
+.hww { position: absolute; inset: 0; overflow: hidden; color: var(--stage-ink); font-family: var(--font); background: radial-gradient(120% 90% at 60% 40%, #1d1830 0%, var(--stage) 62%); border-radius: inherit; }
+.hww:fullscreen { border-radius: 0; }
+.hww canvas { position: absolute; inset: 0; width: 100% !important; height: 100% !important; display: block; outline: none; cursor: grab; }
+.hww canvas:active { cursor: grabbing; }
+.hww.is-hover canvas { cursor: pointer; }
+
+/* floating labels */
+.hww-labels { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.hww-region {
+  position: absolute; left: 0; top: 0; transform: translate(-50%, -100%); white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px 4px 8px; border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, .16); background: rgba(21, 18, 29, .72); backdrop-filter: blur(6px);
+  font-size: 12px; font-weight: 700; letter-spacing: .02em; color: var(--stage-ink); transition: opacity .25s;
+}
+.hww-region .hww-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.hww-region small { color: var(--stage-dim); font-weight: 600; }
+.hww-tip {
+  position: absolute; left: 0; top: 0; z-index: 6; pointer-events: none; max-width: 280px;
+  padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, .18);
+  background: rgba(23, 20, 33, .94); box-shadow: 0 12px 30px rgba(0, 0, 0, .45); font-size: 12.5px; line-height: 1.45;
+  opacity: 0; transition: opacity .12s;
+}
+.hww-tip.is-on { opacity: 1; }
+.hww-tip b { display: block; font-size: 14px; color: #fff; margin-bottom: 2px; }
+.hww-tip span { color: var(--stage-dim); display: block; }
+.hww-tip em { font-style: normal; color: var(--stage-accent); }
+
+/* toolbar */
+.hww-tools { position: absolute; top: 12px; right: 12px; z-index: 5; display: flex; gap: 6px; }
+.hww-btn {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 5px 12px; border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, .22); background: rgba(21, 18, 29, .7); color: var(--stage-ink);
+  font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; backdrop-filter: blur(6px); white-space: nowrap;
+}
+.hww-btn:hover { border-color: var(--stage-accent); }
+.hww-btn:focus-visible { outline: 3px solid var(--stage-accent); outline-offset: 2px; }
+.hww-btn svg { width: 15px; height: 15px; }
+.hww-btn[aria-expanded="true"], .hww-btn[aria-pressed="true"] { border-color: var(--stage-accent); background: rgba(169, 139, 255, .18); }
+
+/* side panel: every project, as buttons (the accessible list) */
+.hww-panel {
+  position: absolute; top: 12px; left: 12px; bottom: 12px; z-index: 5; width: 252px; display: flex; flex-direction: column;
+  border-radius: 14px; border: 1px solid rgba(255, 255, 255, .14); background: rgba(23, 20, 33, .86); backdrop-filter: blur(10px);
+}
+.hww-panel[hidden] { display: none; }
+.hww-panel-head { display: flex; align-items: center; gap: 8px; padding: 12px 12px 8px 14px; }
+.hww-panel-head h3 { margin: 0; font-size: 11px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; color: var(--stage-dim); }
+.hww-panel-head .hww-count { margin-left: auto; font-size: 12px; color: var(--stage-dim); font-weight: 600; }
+.hww-list { flex: 1; overflow: auto; padding: 0 6px 10px; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.2) transparent; }
+.hww-group { margin: 8px 0 2px; padding: 4px 8px; display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--stage-dim); }
+.hww-group .hww-dot { width: 8px; height: 8px; border-radius: 50%; }
+.hww-item {
+  display: flex; width: 100%; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 9px; border: 1px solid transparent;
+  background: transparent; color: var(--stage-ink); font: inherit; font-size: 13px; font-weight: 600; text-align: left; cursor: pointer;
+}
+.hww-item:hover, .hww-item.is-on { background: rgba(169, 139, 255, .14); border-color: rgba(169, 139, 255, .35); }
+.hww-item:focus-visible { outline: 2px solid var(--stage-accent); outline-offset: 1px; }
+.hww-item .hww-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hww-item .hww-flags { display: inline-flex; gap: 4px; flex: none; }
+.hww-flag { width: 7px; height: 7px; border-radius: 50%; }
+.hww-flag.demo { background: #2ed47f; }
+.hww-flag.live { background: #ffffff; }
+.hww-flag.wip { background: #f0b440; }
+
+/* key */
+.hww-key {
+  position: absolute; right: 12px; bottom: 12px; z-index: 5; width: 250px; padding: 12px 14px; border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, .14); background: rgba(23, 20, 33, .86); backdrop-filter: blur(10px); font-size: 12px; line-height: 1.4;
+}
+.hww-key[hidden] { display: none; }
+.hww-key h3 { margin: 0 0 8px; font-size: 11px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; color: var(--stage-dim); }
+.hww-key ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.hww-key li { display: flex; gap: 9px; align-items: flex-start; color: var(--stage-ink); }
+.hww-key li span:last-child { color: var(--stage-dim); }
+.hww-key li b { color: var(--stage-ink); font-weight: 700; }
+.hww-sw { width: 14px; height: 14px; flex: none; margin-top: 1px; border-radius: 4px; display: inline-block; }
+
+/* hints and messages */
+.hww-hint {
+  position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 6; pointer-events: none;
+  padding: 7px 14px; border-radius: 999px; background: rgba(21, 18, 29, .88); border: 1px solid rgba(255, 255, 255, .2);
+  font-size: 12.5px; font-weight: 700; opacity: 0; transition: opacity .2s; white-space: nowrap;
+}
+.hww-hint.is-on { opacity: 1; }
+.hww-msg { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 24px; color: var(--stage-dim); z-index: 4; }
+.hww-msg a { color: var(--stage-accent); }
+
+.hww-tools { z-index: 7; }
+@media (max-width: 720px) {
+  /* Narrow: the list and the key open below the toolbar, so its buttons can always close them. */
+  .hww-panel { width: auto; top: 54px; right: 12px; bottom: auto; max-height: calc(100% - 66px); }
+  .hww-key { left: 12px; right: 12px; width: auto; max-height: calc(100% - 66px); overflow: auto; }
+}
