@@ -4,7 +4,13 @@ window.HW_CONFIG = {
   "hub": {
     "repo": "helloworldie.github.io",
     "url": "https://helloworldie.github.io/",
-    "note": "The repository hub, a public GitHub Pages site. It holds no project data: everything is read at run time from the repos the viewer can see."
+    "note": "The repository hub, a public GitHub Pages site. It holds no project data: everything is read at run time from the repos the viewer can see.",
+    "auth": {
+      "github_app": "HelloWorld Hub",
+      "client_id": null,
+      "exchange_url": null,
+      "note": "Sign in with GitHub: a GitHub App (Contents and Metadata read-only, expiring user tokens) and the Cloudflare Worker in helloworldie.github.io/auth/ that holds its client secret. client_id and exchange_url are public. Until both are set the hub offers token sign-in only."
+    }
   },
   "categories": {
     "products": "Products and platforms",
@@ -24,41 +30,107 @@ window.HW_CONFIG = {
       "#a98bff"
     ],
     "client": [
-      "#0f7b8a",
-      "#4fd1d9"
+      "#6d44e0",
+      "#a98bff"
     ],
     "websites": [
-      "#2563c9",
-      "#7aa7ff"
+      "#6d44e0",
+      "#a98bff"
     ],
     "wordpress": [
-      "#c2410c",
-      "#ff9f68"
+      "#6d44e0",
+      "#a98bff"
     ],
     "ai": [
-      "#b0237a",
-      "#ff7ac6"
+      "#6d44e0",
+      "#a98bff"
     ],
     "games": [
-      "#a16207",
-      "#f5c451"
+      "#6d44e0",
+      "#a98bff"
     ],
     "tools": [
-      "#0a8043",
-      "#2ed47f"
+      "#6d44e0",
+      "#a98bff"
     ],
     "ops": [
-      "#475569",
-      "#a3b1c6"
+      "#6d44e0",
+      "#a98bff"
     ],
     "labs": [
-      "#be123c",
-      "#ff8fa3"
+      "#6d44e0",
+      "#a98bff"
     ],
     "_none": [
       "#8d89a0",
       "#77738a"
     ]
+  },
+  "category_blurbs": {
+    "products": "What HelloWorld offers: the platforms and apps people use.",
+    "client": "Built for one client and kept for reference.",
+    "websites": "Sites, from helloworld.ie to small project pages.",
+    "wordpress": "Themes and plugins for WordPress sites.",
+    "ai": "Tools and experiments built on AI models.",
+    "games": "Games and playful experiments.",
+    "tools": "Helpers that make the work faster.",
+    "ops": "Hosting, the hub itself and the way the work runs.",
+    "labs": "Experiments, tests and things learned along the way."
+  },
+  "stages": {
+    "explore": {
+      "label": "Explore",
+      "blurb": "Ideas tried out: experiments and AI tests.",
+      "colours": [
+        "#a98bff",
+        "#c4b1ff"
+      ],
+      "icon": "spark",
+      "categories": [
+        "labs",
+        "ai"
+      ]
+    },
+    "build": {
+      "label": "Build",
+      "blurb": "The products and tools HelloWorld makes.",
+      "colours": [
+        "#6d44e0",
+        "#a98bff"
+      ],
+      "icon": "build",
+      "categories": [
+        "products",
+        "tools",
+        "games"
+      ]
+    },
+    "ship": {
+      "label": "Ship",
+      "blurb": "Work that goes out: websites, client work, WordPress.",
+      "colours": [
+        "#4a2bb0",
+        "#8f72ff"
+      ],
+      "icon": "ship",
+      "categories": [
+        "client",
+        "websites",
+        "wordpress"
+      ]
+    },
+    "run": {
+      "label": "Run",
+      "blurb": "What keeps it all running.",
+      "colours": [
+        "#262430",
+        "#d9d6e3"
+      ],
+      "icon": "run",
+      "categories": [
+        "ops"
+      ]
+    }
   },
   "kinds": {
     "web-app": "Web app",
@@ -71,6 +143,68 @@ window.HW_CONFIG = {
     "scripts": "Scripts and CLI",
     "docs": "Documents",
     "template": "Template"
+  },
+  "kind_details": {
+    "web-app": {
+      "plural": "Web apps",
+      "size": 3,
+      "form": "tower",
+      "explain": "An app that runs in a browser, often with a server behind it."
+    },
+    "website": {
+      "plural": "Websites",
+      "size": 2,
+      "form": "drum",
+      "explain": "Pages people visit and read."
+    },
+    "plugin": {
+      "plural": "WordPress plugins",
+      "size": 2,
+      "form": "monolith",
+      "explain": "Adds a feature to a WordPress site."
+    },
+    "theme": {
+      "plural": "WordPress themes",
+      "size": 2,
+      "form": "pavilion",
+      "explain": "Decides how a WordPress site looks."
+    },
+    "game": {
+      "plural": "Games",
+      "size": 2,
+      "form": "spire",
+      "explain": "Something to play."
+    },
+    "mobile": {
+      "plural": "Mobile apps",
+      "size": 2,
+      "form": "stele",
+      "explain": "An app for a phone."
+    },
+    "library": {
+      "plural": "Libraries",
+      "size": 2,
+      "form": "hall",
+      "explain": "Code that other projects build on."
+    },
+    "scripts": {
+      "plural": "Scripts and CLI tools",
+      "size": 1,
+      "form": "works",
+      "explain": "Commands that run on a computer or a server."
+    },
+    "docs": {
+      "plural": "Documents",
+      "size": 1,
+      "form": "house",
+      "explain": "Writing: plans, guides and notes."
+    },
+    "template": {
+      "plural": "Templates",
+      "size": 1,
+      "form": "silo",
+      "explain": "A starting point for a new project."
+    }
   },
   "demo_kinds": [
     "web-app",
@@ -85,6 +219,35 @@ window.HW_CONFIG = {
     "experimental": "Experimental",
     "paused": "Paused",
     "retired": "Retired"
+  },
+  "platforms": {
+    "TypeScript": "JavaScript with types, so mistakes show up before the code runs.",
+    "Node.js": "Runs JavaScript on a server.",
+    "React": "A library for building interfaces from components.",
+    "Preact": "A small, fast version of React.",
+    "SvelteKit": "A framework for web apps, built on Svelte.",
+    "Vite": "Builds and serves web apps quickly during development.",
+    "Express": "A small web server framework for Node.js.",
+    "SQLite": "A database kept in a single file.",
+    "PostgreSQL": "A full database server.",
+    "OpenAI": "The company and API behind GPT models.",
+    "Vercel": "Hosting for web apps.",
+    "GitHub Pages": "Free hosting for static sites, straight from a repo.",
+    "WordPress": "The content management system that runs a large share of the web.",
+    "three.js": "Draws 3D graphics in the browser.",
+    "Puppeteer": "Drives a browser from code, for screenshots and tests."
+  },
+  "terms": {
+    "Hub card": "The file hub/project.json in each repo. It gives the project its name, category, pictures and demo here.",
+    "Demo": "A copy of the project that runs inside the hub, with made-up data and no network.",
+    "Guide": "Step-by-step pictures with marks that show where to click.",
+    "Live site": "The address where a project runs for real.",
+    "Private repo": "A repo only its owner can see. The hub shows it only after you sign in.",
+    "Category": "What a project is for. Each project has one.",
+    "Kind": "What form a project takes: a web app, a website, a plugin and so on.",
+    "Status": "Whether a project is live, in progress, experimental, paused or retired.",
+    "README": "The developer notes at the top of a repo.",
+    "Idea to live": "The line from an idea to a running product: explore, build, ship, run."
   },
   "audiences": {
     "public": "Anyone",
@@ -134,7 +297,10 @@ window.HW_CONFIG = {
     "cover_kb": 400,
     "image_kb": 900,
     "icon_kb": 20,
-    "demo_kb": 3072
+    "demo_kb": 3072,
+    "alt": 200,
+    "mark_label": 60,
+    "slug": 60
   },
   "hub_schema": 1
 };

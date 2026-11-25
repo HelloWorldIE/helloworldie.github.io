@@ -4,16 +4,19 @@ One page to find every HelloWorld project, read about it, try its demo and brows
 
 **Live:** https://helloworldie.github.io/ · **Dashboard:** https://helloworldie.github.io/dashboard/
 
-- **Discover, All projects, Categories:** projects grouped and filtered by category, kind, status
-  and language, at three detail levels (Overview, How it's built, Code).
-- **World:** every project as a building on one dotted planet, grouped by category.
+- **The City:** every project is a building in a calm 3D model, in a district for its category.
+  Its files are the blocks around it. Take a tour, search, or walk through the streets.
+- **Discover, All projects, the Map, Idea to live, Connections, Live sites, What's new:** find
+  projects by category, kind, status and the tools they use. Choose how much detail to see:
+  Overview, How it's built or Code.
 - **Project pages:** pictures, step-by-step guides, the demo in a sealed frame, the README and a
   code browser.
 - **Health:** which repos have a hub card, a README, a demo, a category (signed in).
-- **Dashboard:** codebase, languages, activity and live projects on one screen.
+- **Dashboard:** projects, recent changes, the latest update and rules passing, on one screen.
 
-Signed out, the hub shows public repos only. To see private ones, sign in with a read-only
-fine-grained GitHub token; it stays in that browser tab and goes only to GitHub.
+Signed out, the hub shows public repos only. To see private ones, sign in with GitHub or with a
+read-only fine-grained token. Either way the hub can only read, and the sign-in stays in that
+browser tab and goes only to GitHub.
 
 ## How a project appears here
 
@@ -29,7 +32,7 @@ Open `index.html` through any static server, for example
 ## Third-party code
 
 Pinned copies in `assets/vendor/`: marked (MIT), DOMPurify (Apache 2.0 or MPL 2.0),
-highlight.js (BSD 3-Clause), three.js (MIT). Each keeps its licence notice.
+highlight.js (BSD 3-Clause), three.js (MIT), GSAP (GreenSock standard licence). Each keeps its licence notice.
 
 ---
 

@@ -4,7 +4,22 @@
    in this public repo: it all comes from GitHub at run time.
 
    Sign-in is a read-only fine-grained token the viewer pastes. It is kept in this tab only
-   (sessionStorage) and sent only to api.github.com. */
+   (sessionStorage) and sent only to api.github.com.
+
+   API (window.HWGH):
+     state, on(event, fn), progress, loads, hasToken, preview
+       events: progress {stage, done, total, loads}, load {kind, pending, done, failed},
+               ratelimit, auth, loading, repos, error, details
+     loadRepos(), signIn(token), signInWithGitHub(), signOut(), authReady
+     projects({all}), info(repo), findRepo(name, {ci}), isCopy(repo)
+     cleanCard(text) -> {card, error}, safePath(p), httpsUrl(u)
+     fileText(repo, path), fileBlob(repo, path), image(repo, path) -> blob URL,
+     tree(repo) -> {truncated, items [{path, type, size, sha}]} (cached as hw_tree2_<repo>_<pushed_at>)
+     api(path, {headers: {Accept}}), apiJson(path), graphql(query, vars): read-only (GET only;
+       no mutations), same token, limit and host checks as everything else
+     lastCommitFor(repo, path) -> {login, date, verified, message, sha} or null
+     trackLoad(kind, promise) -> the same promise, counted in `loads[kind]` (pics, files, trees)
+     langColour(name), RateLimit */
 (function () {
   'use strict';
 
@@ -35,7 +50,27 @@
 
   /* ---------- progress (the status beside the title) ---------- */
   var progress = { stage: 'idle', done: 0, total: 0 };
-  function setProgress(stage, done, total) { progress = { stage: stage, done: done || 0, total: total || 0 }; emit('progress', progress); }
+  function setProgress(stage, done, total) { progress = { stage: stage, done: done || 0, total: total || 0, loads: loads }; emit('progress', progress); }
+
+  /* Pictures and files fetched after the list (for the loader): counted per kind. */
+  var loads = Object.create(null);
+  progress.loads = loads;
+  function trackLoad(kind, p) {
+    kind = typeof kind === 'string' && /^[a-z]{1,12}$/.test(kind) ? kind : 'pics';
+    if (!p || typeof p.then !== 'function') return p;
+    var n = loads[kind] || (loads[kind] = { pending: 0, done: 0, failed: 0 });
+    n.pending++;
+    function settle(ok) {
+      n.pending = Math.max(0, n.pending - 1);
+      if (ok) n.done++; else n.failed++;
+      emit('load', { kind: kind, pending: n.pending, done: n.done, failed: n.failed });
+      progress.loads = loads; emit('progress', progress);
+    }
+    emit('load', { kind: kind, pending: n.pending, done: n.done, failed: n.failed });
+    progress.loads = loads; emit('progress', progress);
+    p.then(function () { settle(true); }, function () { settle(false); });
+    return p;
+  }
 
   /* ---------- fetch ---------- */
   function RateLimit(reset) { this.name = 'RateLimit'; this.reset = reset; this.message = 'GitHub rate limit reached'; }
@@ -89,6 +124,18 @@
     var j = await res.json();
     if (j.errors && !j.data) throw new Error(j.errors[0].message);
     return j.data || {};
+  }
+
+  /* What other hub files may call (the City, file lists): reads only, through the same token,
+     limit and host checks. Only an Accept header may be set. */
+  function readApi(path, opts) {
+    var h = {}, a = opts && opts.headers && Object.prototype.hasOwnProperty.call(opts.headers, 'Accept') ? opts.headers.Accept : null;
+    if (typeof a === 'string' && /^application\/vnd\.github(\.[a-z0-9+.-]+)?$|^application\/json$/.test(a)) h.Accept = a;
+    return api(path, { headers: h });
+  }
+  function readGraphql(query, variables) {
+    if (typeof query !== 'string' || /\b(mutation|subscription)\b/i.test(query)) return Promise.reject(new Error('Read-only'));
+    return graphql(query, variables);
   }
 
   /* ---------- sign-in ---------- */
@@ -311,6 +358,8 @@
 
   /* ---------- the card standard (helloworldGitub/templates/hub/README.md) ---------- */
   var own = function (obj, key) { return typeof key === 'string' && Object.prototype.hasOwnProperty.call(obj, key); };
+  // A card value by its own key only: never one inherited from Object.prototype.
+  function pick(o, key) { return o && typeof o === 'object' && Object.prototype.hasOwnProperty.call(o, key) ? o[key] : undefined; }
   function str(v, max) { return typeof v === 'string' && v.trim() && v.length <= max ? v.trim() : null; }
   function strList(v, maxItems, maxLen) {
     if (!Array.isArray(v)) return null;
@@ -331,53 +380,76 @@
   }
   function num(v) { return typeof v === 'number' && isFinite(v) && v >= 0 && v <= 100 ? v : null; }
 
+  // A mark's badge, by its kind's badge rule in the config: a step number 1-99, an area letter.
+  function badge(kind, v) {
+    var rule = (CFG.mark_kinds[kind] || {}).badge;
+    var isNum = typeof v === 'number' && isFinite(v) && v === Math.floor(v) && v >= 1 && v <= 99;
+    var isLetter = typeof v === 'string' && /^[A-Za-z]$/.test(v);
+    if (rule === 'number') return isNum ? v : null;
+    if (rule === 'letter') return isLetter ? v.toUpperCase() : null;
+    if (rule === 'none') return null;
+    return isNum ? v : isLetter ? v.toUpperCase() : null;
+  }
+  var SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
   function cleanCard(text) {
     var raw;
     if (typeof text !== 'string' || text.length > 200000) return { card: null, error: 'Card is missing or too large' };
     if (text.indexOf('{{') >= 0) return { card: null, error: 'Card still has template placeholders' };
     try { raw = JSON.parse(text); } catch (e) { return { card: null, error: 'Card is not valid JSON' }; }
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { card: null, error: 'Card is not an object' };
-    var c = Object.create(null), L = LIMITS;
-    c.name = str(raw.name, L.name || 40);
+    var c = Object.create(null), L = LIMITS, P = function (k) { return pick(raw, k); };
+    var ALT = L.alt || 200;
+    c.name = str(P('name'), L.name || 40);
     if (!c.name) return { card: null, error: 'Card has no name' };
-    c.tagline = str(raw.tagline, L.tagline || 90);
-    c.summary = str(raw.summary, L.summary || 600);
-    c.category = own(CFG.categories, raw.category) ? raw.category : null;
-    c.kind = own(CFG.kinds, raw.kind) ? raw.kind : null;
-    c.status = own(CFG.statuses, raw.status) ? raw.status : null;
-    c.audience = Array.isArray(raw.audience) ? raw.audience.filter(function (a) { return own(CFG.audiences, a); }) : [];
-    c.features = strList(raw.features, L.features || 8, L.feature || 120) || [];
-    c.built_with = strList(raw.built_with, L.built_with || 12, 40) || [];
-    c.live_url = httpsUrl(raw.live_url);
-    c.demo = /\.html?$/i.test(raw.demo || '') ? safePath(raw.demo) : null;
-    c.no_demo = str(raw.no_demo, 240);
-    c.cover = /\.(png|jpe?g|webp)$/i.test(raw.cover || '') ? safePath(raw.cover) : null;
-    c.icon = /\.svg$/i.test(raw.icon || '') ? safePath(raw.icon) : null;
-    c.same_as = typeof raw.same_as === 'string' && /^[A-Za-z0-9._-]{1,100}$/.test(raw.same_as) ? raw.same_as : null;
-    c.updated = typeof raw.updated === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.updated) ? raw.updated : null;
-    c.gallery = (Array.isArray(raw.gallery) ? raw.gallery : []).slice(0, L.gallery || 12).map(function (g) {
-      if (!g || typeof g !== 'object') return null;
-      var src = /\.(png|jpe?g|webp|gif)$/i.test(g.src || '') ? safePath(g.src) : null;
-      return src ? { src: src, caption: str(g.caption, L.caption || 140) || '' } : null;
+    c.tagline = str(P('tagline'), L.tagline || 90);
+    c.summary = str(P('summary'), L.summary || 600);
+    c.category = own(CFG.categories, P('category')) ? P('category') : null;
+    c.kind = own(CFG.kinds, P('kind')) ? P('kind') : null;
+    c.status = own(CFG.statuses, P('status')) ? P('status') : null;
+    c.audience = Array.isArray(P('audience')) ? P('audience').filter(function (a, i, all) { return own(CFG.audiences, a) && all.indexOf(a) === i; }) : [];
+    c.features = strList(P('features'), L.features || 8, L.feature || 120) || [];
+    c.built_with = strList(P('built_with'), L.built_with || 12, 40) || [];
+    c.live_url = httpsUrl(P('live_url'));
+    c.demo = typeof P('demo') === 'string' && /\.html?$/i.test(P('demo')) ? safePath(P('demo')) : null;
+    c.no_demo = str(P('no_demo'), 240);
+    c.cover = typeof P('cover') === 'string' && /\.(png|jpe?g|webp)$/i.test(P('cover')) ? safePath(P('cover')) : null;
+    c.icon = typeof P('icon') === 'string' && /\.svg$/i.test(P('icon')) ? safePath(P('icon')) : null;
+    c.same_as = typeof P('same_as') === 'string' && /^[A-Za-z0-9._-]{1,100}$/.test(P('same_as')) ? P('same_as') : null;
+    c.updated = typeof P('updated') === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(P('updated')) ? P('updated') : null;
+    c.gallery = (Array.isArray(P('gallery')) ? P('gallery') : []).slice(0, L.gallery || 12).map(function (g) {
+      if (!g || typeof g !== 'object' || Array.isArray(g)) return null;
+      var s = pick(g, 'src');
+      var src = typeof s === 'string' && /\.(png|jpe?g|webp|gif)$/i.test(s) ? safePath(s) : null;
+      return src ? { src: src, caption: str(pick(g, 'caption'), L.caption || 140) || '', alt: str(pick(g, 'alt'), ALT) } : null;
     }).filter(Boolean);
-    c.guides = (Array.isArray(raw.guides) ? raw.guides : []).slice(0, L.guides || 6).map(function (g) {
-      if (!g || typeof g !== 'object') return null;
-      var title = str(g.title, 80);
+    var slugs = Object.create(null);
+    c.guides = (Array.isArray(P('guides')) ? P('guides') : []).slice(0, L.guides || 6).map(function (g) {
+      if (!g || typeof g !== 'object' || Array.isArray(g)) return null;
+      var title = str(pick(g, 'title'), 80);
       if (!title) return null;
-      var steps = (Array.isArray(g.steps) ? g.steps : []).slice(0, L.steps || 20).map(function (s) {
-        if (!s || typeof s !== 'object') return null;
-        var text = str(s.text, L.step || 240);
+      var slug = pick(g, 'slug');
+      slug = typeof slug === 'string' && slug.length <= (L.slug || 60) && SLUG_RE.test(slug) && !slugs[slug] ? slug : null;
+      if (slug) slugs[slug] = true;
+      var steps = (Array.isArray(pick(g, 'steps')) ? pick(g, 'steps') : []).slice(0, L.steps || 20).map(function (s) {
+        if (!s || typeof s !== 'object' || Array.isArray(s)) return null;
+        var text = str(pick(s, 'text'), L.step || 240);
         if (!text) return null;
-        var image = /\.(png|jpe?g|webp)$/i.test(s.image || '') ? safePath(s.image) : null;
-        var marks = (Array.isArray(s.marks) ? s.marks : []).slice(0, L.marks || 8).map(function (m) {
-          if (!m || typeof m !== 'object' || !own(CFG.mark_kinds, m.kind)) return null;
-          var x = num(m.x), y = num(m.y), w = num(m.w), h = num(m.h);
+        var im = pick(s, 'image');
+        var image = typeof im === 'string' && /\.(png|jpe?g|webp)$/i.test(im) ? safePath(im) : null;
+        var marks = (Array.isArray(pick(s, 'marks')) ? pick(s, 'marks') : []).slice(0, L.marks || 8).map(function (m) {
+          if (!m || typeof m !== 'object' || Array.isArray(m)) return null;
+          var kind = pick(m, 'kind');
+          if (!own(CFG.mark_kinds, kind)) return null;
+          var x = num(pick(m, 'x')), y = num(pick(m, 'y')), w = num(pick(m, 'w')), h = num(pick(m, 'h'));
           if ([x, y, w, h].some(function (v) { return v === null; })) return null;
-          return { kind: m.kind, x: x, y: y, w: w, h: h, label: str(m.label, 12) };
+          if (!w || !h || x + w > 100.5 || y + h > 100.5) return null;
+          return { kind: kind, n: badge(kind, pick(m, 'n')), x: x, y: y, w: w, h: h, label: str(pick(m, 'label'), L.mark_label || 60) };
         }).filter(Boolean);
-        return { text: text, image: image, marks: image ? marks : [] };
+        return { text: text, image: image, alt: image ? str(pick(s, 'alt'), ALT) : null, marks: image ? marks : [] };
       }).filter(Boolean);
-      return steps.length ? { title: title, summary: str(g.summary, 240), steps: steps } : null;
+      var who = pick(g, 'for');
+      return steps.length ? { title: title, summary: str(pick(g, 'summary'), 240), for: own(CFG.audiences, who) ? who : null, slug: slug, steps: steps } : null;
     }).filter(Boolean);
     return { card: c, error: null };
   }
@@ -450,25 +522,37 @@
   }
 
   // The projects to show: no forks, no archived repos, one card per project.
+  // A second copy of a project: its card's same_as names another repo here (any case).
+  function isCopy(r) {
+    var s = r && r.card && r.card.same_as;
+    if (!s || s.toLowerCase() === String(r.name).toLowerCase()) return false;
+    return !!findRepo(s, { ci: true });
+  }
   function projects(opts) {
     opts = opts || {};
-    var names = Object.create(null);
-    state.repos.forEach(function (r) { names[r.name] = true; });
     return state.repos.filter(function (r) {
       if (!opts.all && (r.fork || r.archived)) return false;
-      if (r.card && r.card.same_as && names[r.card.same_as] && r.card.same_as !== r.name) return false;
-      return true;
+      return !isCopy(r);
     }).map(info);
   }
 
   /* ---------- files and pictures ---------- */
-  function findRepo(name) { for (var i = 0; i < state.repos.length; i++) if (state.repos[i].name === name) return state.repos[i]; return null; }
+  // By exact name; with {ci: true} also in any case (GitHub's names are case-insensitive).
+  function findRepo(name, opts) {
+    if (typeof name !== 'string' || !name) return null;
+    for (var i = 0; i < state.repos.length; i++) if (state.repos[i].name === name) return state.repos[i];
+    if (opts && opts.ci) {
+      var low = name.toLowerCase();
+      for (var j = 0; j < state.repos.length; j++) if (state.repos[j].name.toLowerCase() === low) return state.repos[j];
+    }
+    return null;
+  }
   function contentsPath(repo, path) {
     return '/repos/' + ACCOUNT + '/' + encodeURIComponent(repo) + '/contents/' + path.split('/').map(encodeURIComponent).join('/');
   }
 
   async function fileBlob(repoName, path) {
-    var r = findRepo(repoName), p = safePath(path);
+    var r = findRepo(repoName, { ci: true }), p = safePath(path);
     if (!r || !p) throw new Error('Not available');
     if (!r.private) {
       var res = await fetch(RAW + '/' + ACCOUNT + '/' + encodeURIComponent(r.name) + '/' + encodeURIComponent(r.default_branch) + '/' + p.split('/').map(encodeURIComponent).join('/'));
@@ -497,15 +581,48 @@
     return imageCache[key];
   }
 
+  // A repo's whole file tree, with each item's sha (the City reads blobs by it). Kept for this tab,
+  // keyed by the last push, so a new push fetches it again. Signed out, every call costs one of
+  // the 60 hourly requests: call it for one project at a time, never for every repo.
+  var oldTreesGone = false;
   async function tree(repoName) {
-    var r = findRepo(repoName);
+    var r = findRepo(repoName, { ci: true });
     if (!r) throw new Error('Not available');
-    var key = 'hw_tree_' + r.name + '_' + (r.pushed_at || '');
+    if (!oldTreesGone) {
+      oldTreesGone = true;
+      try { for (var k = sessionStorage.length - 1; k >= 0; k--) { var name = sessionStorage.key(k); if (name && name.indexOf('hw_tree_') === 0) sessionStorage.removeItem(name); } } catch (e) {}
+    }
+    var key = 'hw_tree2_' + r.name + '_' + (r.pushed_at || '');
     try { var cached = sessionStorage.getItem(key); if (cached) return JSON.parse(cached); } catch (e) {}
     var t = await apiJson('/repos/' + ACCOUNT + '/' + encodeURIComponent(r.name) + '/git/trees/' + encodeURIComponent(r.default_branch) + '?recursive=1');
-    var slimTree = { truncated: !!t.truncated, items: (t.tree || []).map(function (i) { return { path: i.path, type: i.type, size: i.size || 0 }; }) };
+    var slimTree = { truncated: !!t.truncated, items: (Array.isArray(t.tree) ? t.tree : []).map(function (i) {
+      return { path: String(i.path), type: i.type === 'tree' ? 'tree' : i.type === 'commit' ? 'commit' : 'blob', size: typeof i.size === 'number' ? i.size : 0, sha: typeof i.sha === 'string' && /^[0-9a-f]{40,64}$/.test(i.sha) ? i.sha : null };
+    }) };
     try { sessionStorage.setItem(key, JSON.stringify(slimTree)); } catch (e) {}
     return slimTree;
+  }
+
+  // The last commit that touched one file (the demo confirm screen's provenance line).
+  var commitCache = Object.create(null);
+  function lastCommitFor(repoName, path) {
+    var r = findRepo(repoName, { ci: true }), p = safePath(path);
+    if (!r || !p) return Promise.reject(new Error('Not available'));
+    var key = r.name + '/' + p + '@' + (r.pushed_at || '');
+    if (commitCache[key]) return commitCache[key];
+    commitCache[key] = apiJson('/repos/' + ACCOUNT + '/' + encodeURIComponent(r.name) + '/commits?per_page=1&sha=' +
+      encodeURIComponent(r.default_branch) + '&path=' + encodeURIComponent(p)).then(function (list) {
+      var c = Array.isArray(list) ? list[0] : null;
+      if (!c || !c.commit) return null;
+      var when = (c.commit.committer && c.commit.committer.date) || (c.commit.author && c.commit.author.date) || null;
+      return {
+        login: (c.author && typeof c.author.login === 'string') ? c.author.login : null,
+        date: when, verified: !!(c.commit.verification && c.commit.verification.verified),
+        message: String(c.commit.message || '').split('\n')[0].slice(0, 200),
+        sha: typeof c.sha === 'string' ? c.sha : null
+      };
+    });
+    commitCache[key].catch(function () { delete commitCache[key]; });
+    return commitCache[key];
   }
 
   window.HWGH = {
@@ -514,9 +631,13 @@
     get hasToken() { return !!token || PREVIEW; },
     loadRepos: loadRepos, signIn: signIn, signOut: signOut,
     signInWithGitHub: signInWithGitHub, authReady: AUTH_READY,
-    projects: projects, info: info, findRepo: findRepo,
+    projects: projects, info: info, findRepo: findRepo, isCopy: isCopy,
     cleanCard: cleanCard, safePath: safePath, httpsUrl: httpsUrl,
     fileText: fileText, fileBlob: fileBlob, image: image, tree: tree,
+    api: readApi, apiJson: function (path) { return apiJson(path); }, graphql: readGraphql,
+    lastCommitFor: lastCommitFor, trackLoad: trackLoad,
+    get loads() { return loads; },
+    get preview() { return PREVIEW; },
     langColour: function (name) { return LANG_COLOURS[name] || null; },
     RateLimit: RateLimit
   };

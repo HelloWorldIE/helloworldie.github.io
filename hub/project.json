@@ -2,24 +2,26 @@
   "schema": 1,
   "name": "Repository Hub",
   "tagline": "Find every HelloWorld project, read about it, try its demo and browse its code",
-  "summary": "The page you are on. It reads the HelloWorldIE GitHub account at run time and shows each project from its hub card: pictures, guides, demo, README and code. Signed out it shows public projects; a read-only token adds the private ones.",
+  "summary": "The page you are on. It reads the HelloWorldIE GitHub account when it opens. Each project shows its pictures, guides, demo, README and code, and stands as a building in the City. Signed out, it shows public projects. Sign in with GitHub, or with a read-only token, to see the private ones.",
   "category": "ops",
   "kind": "website",
   "status": "live",
   "audience": ["internal"],
   "features": [
-    "Browse projects by category, kind, status and language",
-    "Open a project's demo in a sealed frame",
+    "Walk through the City, where each project is a building and its files are the streets around it",
+    "Find a project by category, kind, status or the tools it uses",
+    "Follow every project along the line from idea to live",
+    "Open a project's demo in a sealed frame, and follow its step-by-step guides",
     "Read the README and browse the code",
-    "See every project on a 3D planet",
-    "Check which repos still need a hub card"
+    "See which repos still need a README, a hub card or a demo"
   ],
-  "built_with": ["Vanilla JS", "three.js", "GitHub REST and GraphQL APIs", "GitHub Pages"],
+  "built_with": ["Vanilla JS", "three.js", "GSAP", "GitHub REST and GraphQL APIs", "GitHub Pages", "Cloudflare Workers"],
   "live_url": "https://helloworldie.github.io/",
   "no_demo": "The hub is itself live at its own address.",
   "cover": "hub/cover.jpg",
   "gallery": [
-    { "src": "hub/gallery/01-dashboard-light.jpg", "caption": "The single-screen dashboard with demo data, in light mode" }
+    { "src": "hub/gallery/01-dashboard-light.jpg", "caption": "The one-screen dashboard with demo data, in light mode", "alt": "Four cards: projects with a live ring, weekly changes, the latest update and rules passing, with the HelloWorld bot above them" },
+    { "src": "hub/gallery/02-dashboard-dark.jpg", "caption": "The same dashboard in dark mode, with a larger set of demo projects", "alt": "The dashboard's four cards on a dark ground, with the bot in lilac" }
   ],
   "updated": "2026-11-26"
 }

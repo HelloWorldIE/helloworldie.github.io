@@ -1,7 +1,8 @@
 {
   "serve": ".",
   "shots": [
-    { "out": "hub/cover.jpg", "path": "dashboard/?demo", "width": 1600, "height": 1000, "theme": "dark", "wait": 3500 },
-    { "out": "hub/gallery/01-dashboard-light.jpg", "path": "dashboard/?demo", "width": 1440, "height": 900, "theme": "light", "wait": 3500 }
+    { "out": "hub/cover.jpg", "path": "dashboard/?big", "width": 1600, "height": 1000, "theme": "light", "wait": 9000 },
+    { "out": "hub/gallery/01-dashboard-light.jpg", "path": "dashboard/?demo", "width": 1440, "height": 900, "theme": "light", "wait": 9000 },
+    { "out": "hub/gallery/02-dashboard-dark.jpg", "path": "dashboard/?big", "width": 1440, "height": 900, "theme": "dark", "wait": 9000 }
   ]
 }

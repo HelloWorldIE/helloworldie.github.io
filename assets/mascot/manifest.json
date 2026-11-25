@@ -1,0 +1,127 @@
+{
+  "name": "helloworld-mascot",
+  "version": "1.0.0",
+  "description": "Motion system for the HelloWorld.ie bot — an expressive chat-bubble robot. Character is swappable data; engine/expressions/life are character-agnostic.",
+  "runtime": { "dependency": "gsap@^3.12", "module": "esm", "css": "mascot/mascot.css", "entry": "mascot/index.js" },
+  "docs": { "ai_guide": "mascot/AGENTS.md", "human_reference": "mascot/README.md", "examples": ["mascot/demo.html", "mascot/scene.html"] },
+
+  "principles": {
+    "three_layers": "Every motion drives EYE (eyes), GRP (head group), BOT (whole icon). Smaller/faster parts lead; the heavier BOT follows a beat behind with a slight tilt.",
+    "effort": "Anticipation (move against the action) -> Action (fast-out ease) -> Follow-through (overshoot + settle). No straight A-to-B lerps.",
+    "no_deform_for_travel": "Locomotion is pure position; never skew/distort while moving. In-place squash/stretch is OK for energy (jumps, laughs).",
+    "momentum": "Locomotion is jellyfish pulse-and-glide: gather -> one strong push -> long decelerating coast that settles from a small overshoot.",
+    "return_to_rest": "Glide to neutral (toRest) before any action; every performance ends with all layers back at neutral.",
+    "timing": "Segments 0.1-0.7s; whole performances ~0.8-2.5s. Energetic: power2/3.out, back.out. Springy settle: elastic.out(1,0.5-0.7). Calm: sine/power2.inOut."
+  },
+
+  "api": {
+    "constructor": "new Mascot({ mount, character, gsap?, mood?='calm', autoblink?=true, typeSpeed?=82, roam?:{within,padding}, onStatus? })",
+    "methods": {
+      "play(token)": "Play one performance, a quoted string to type, or 'a & b' to run both at once. Busy-guarded; await it.",
+      "run(seq)": "Play a comma/newline string or array of tokens in order; scatters natural blinks between steps when autoblink is on.",
+      "type(str)": "Eye flies out, becomes a blinking cursor, types str (marquee if overflow), returns to eyes.",
+      "blink(kind)": "kind: 'light'|'medium'|'strong'|'double'|number.",
+      "setMood(mood)": "'still'|'calm'|'float'. In float, pass roam to drift a larger container.",
+      "destroy()": "Tear down and remove listeners."
+    },
+    "grammar": {
+      "expression": "happy",
+      "type": "\"Found it!\"  or  text \"Found it!\"",
+      "blink": "blink | blink light | blink strong | blink double | blink x3",
+      "combine": "a & b  (run both simultaneously, e.g.  found & \"Found it!\")"
+    }
+  },
+
+  "moods": {
+    "still": { "blink_per_min": "~5-7", "motion": "near-stationary, faint scale-only breathing", "use": "inline beside text, dense UI, reduced-motion" },
+    "calm":  { "blink_per_min": "~6-10", "motion": "gentle breathing + occasional eye darts", "use": "default; cards, headers, chat avatar", "default": true },
+    "float": { "blink_per_min": "~7-11", "motion": "jellyfish pulse-glide drift; eyes+tilt lean toward travel; 'bored' beats between moves", "use": "heroes, empty states, loading; pass roam to travel a big canvas" }
+  },
+  "roam": { "option": "roam: { within: '#canvas', padding: 16 }", "behaviour": "whole mascot translates across the container; calm/still glides it back to centre; expressions fire mid-roam." },
+
+  "blink_model": {
+    "why": "Cheapest signal of life and attention. None = dead/frozen; too many = anxious/glitchy.",
+    "cadence": "Irregular, clustered (exponential distribution) around a relaxed mean, with occasional natural double-blinks. Not a metronome.",
+    "arousal": "An internal value rises after energetic performances or fast float moves and briefly raises the blink rate, then decays. Calming actions lower it. Automatic.",
+    "grades": ["light", "medium", "strong", "double", "N (number)"],
+    "as_cursor": "While typing, the merged eye blinks AS the text cursor."
+  },
+
+  "categories": {
+    "emotion":  { "label": "Emotion",  "note": "How he feels — affective range" },
+    "reaction": { "label": "Reaction", "note": "Responses to an event" },
+    "gesture":  { "label": "Gesture",  "note": "Communicative body language" },
+    "process":  { "label": "Process",  "note": "Functional UI / system states" }
+  },
+
+  "expressions": [
+    { "name": "happy",      "category": "emotion",  "arousal": 0.7,  "intent": "warm positive result / good news" },
+    { "name": "excited",    "category": "emotion",  "arousal": 1.5,  "intent": "bouncy enthusiasm; a win" },
+    { "name": "celebrate",  "category": "emotion",  "arousal": 1.6,  "intent": "big milestone leap; 'you got cited!'" },
+    { "name": "laugh",      "category": "emotion",  "arousal": 1.3,  "intent": "playful delighter (use sparingly)" },
+    { "name": "proud",      "category": "emotion",  "arousal": 0.6,  "intent": "showing off the user's achievement" },
+    { "name": "relieved",   "category": "emotion",  "arousal": -0.4, "intent": "problem resolved; visible sigh" },
+    { "name": "curious",    "category": "emotion",  "arousal": 0.4,  "intent": "inviting exploration; 'let's see'" },
+    { "name": "shy",        "category": "emotion",  "arousal": -0.2, "intent": "humble, gentle welcome" },
+    { "name": "nervous",    "category": "emotion",  "arousal": 1.1,  "intent": "stakes/uncertainty (rare)" },
+    { "name": "skeptical",  "category": "emotion",  "arousal": 0.3,  "intent": "'hmm, really?' reviewing a claim" },
+    { "name": "sad",        "category": "emotion",  "arousal": -0.6, "intent": "a downturn / dropped metric (brief)" },
+    { "name": "dizzy",      "category": "emotion",  "arousal": 1.4,  "intent": "overwhelmed / too much data / playful error" },
+
+    { "name": "yes",        "category": "reaction", "arousal": 0.4,  "intent": "confirm / agree (clean nod)" },
+    { "name": "no",         "category": "reaction", "arousal": 0.4,  "intent": "decline / 'nope' (shake)" },
+    { "name": "surprise",   "category": "reaction", "arousal": 1.1,  "intent": "an unexpected result lands" },
+    { "name": "impressed",  "category": "reaction", "arousal": 0.9,  "intent": "admiring a strong result; 'wow'" },
+    { "name": "confused",   "category": "reaction", "arousal": 0.6,  "intent": "ambiguous / unparsed input; 'huh?'" },
+    { "name": "wink",       "category": "reaction", "arousal": 0.7,  "intent": "knowing friendly aside; a tip" },
+    { "name": "idea",       "category": "reaction", "arousal": 0.7,  "intent": "a suggestion/insight; eureka pop" },
+
+    { "name": "wave",       "category": "gesture",  "arousal": 0.7,  "intent": "hello / goodbye" },
+    { "name": "look",       "category": "gesture",  "arousal": 0.5,  "intent": "glance around the scene" },
+    { "name": "point",      "category": "gesture",  "arousal": 0.5,  "intent": "direct attention to a CTA/field/result" },
+    { "name": "shrug",      "category": "gesture",  "arousal": 0.3,  "intent": "'dunno' / optional step skipped" },
+    { "name": "listen",     "category": "gesture",  "arousal": -0.2, "intent": "waiting on input; attentive lean (chat)" },
+    { "name": "peek",       "category": "gesture",  "arousal": 0.6,  "intent": "ENTRANCE: slides in and bobs to a stop" },
+    { "name": "spin",       "category": "gesture",  "arousal": 1.2,  "intent": "playful flourish; reset / refresh / ta-da" },
+    { "name": "determined", "category": "gesture",  "arousal": 0.6,  "intent": "'on it' resolve before a hard task" },
+
+    { "name": "thinking",   "category": "process",  "arousal": 0.0,  "intent": "processing / composing" },
+    { "name": "scan",       "category": "process",  "arousal": 0.5,  "intent": "SIGNATURE: searching the web for citations (L->R sweep)" },
+    { "name": "working",    "category": "process",  "arousal": 0.6,  "intent": "generic busy 'on it'" },
+    { "name": "found",      "category": "process",  "arousal": 1.1,  "intent": "results arrive; satisfying 'got it' snap (pair with type)" },
+    { "name": "notfound",   "category": "process",  "arousal": -0.3, "intent": "empty state: searches then gives up" },
+    { "name": "error",      "category": "process",  "arousal": 1.2,  "intent": "failure; sharp 'oops' shudder then recover" },
+    { "name": "alert",      "category": "process",  "arousal": 1.3,  "intent": "notification 'ping!'; pop up wide-eyed" },
+    { "name": "sleep",      "category": "process",  "arousal": -3.0, "intent": "idle / timeout / disabled; eyes close" }
+  ],
+
+  "special": {
+    "blink": { "intent": "punctuation between beats; grades light/medium/strong/double/N" },
+    "type":  { "intent": "eye becomes a blinking cursor and types a string; brand suffix auto-accented; typed text is violet" }
+  },
+
+  "recipes": {
+    "audit_to_win": "curious, scan, working, found & \"Found it!\", celebrate",
+    "chat_answer": "listen, thinking, \"Here's what I found…\"",
+    "empty_results": "notfound, shrug",
+    "failure": "error, \"Something broke\", sad",
+    "notification": "alert",
+    "wordmark_reveal": "text \"HelloWorld.ie\""
+  },
+
+  "authoring_rules": {
+    "layers": "Drive all three layers; BOT moves ~40-60% of the GRP move and a beat behind, with 1-3deg tilt.",
+    "shape": "anticipation -> action(fast-out) -> settle(overshoot+ease). No straight lerps.",
+    "travel": "No skew/deform if the motion implies travel; in-place squash OK for energy.",
+    "end_neutral": "Leave every layer at neutral (no orphaned transform).",
+    "register": "Add to the returned map, a CATEGORIES group, and AROUSE (energetic/positive +0.5..+1.6, neutral +0.3..+0.5, calming negative).",
+    "magnitudes": "eye darts ±7-22 xPercent (big looks ±38); GRP nod/shake ±6-9; GRP rotation ±3-8deg; jumps yPercent -16..-34.",
+    "scale": "Must read at small sizes — prefer one clear gesture over busy combos."
+  },
+
+  "accessibility": {
+    "reduced_motion": "On prefers-reduced-motion: start in 'still', avoid auto sequences, prefer single short performances or blinks.",
+    "offscreen": "Pause when not visible (IntersectionObserver -> setMood('still') or life.stop()); destroy() on unmount.",
+    "never_block": "The mascot is feedback, never a gate; fire on events, don't await it in a user-waiting path."
+  }
+}

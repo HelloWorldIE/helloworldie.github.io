@@ -1,0 +1,46 @@
+// ───────────────────────────────────────────────────────────────────────────
+// CHARACTER SPEC — HelloWorld.ie "Bot"
+// A character is pure data: an SVG head, geometry ratios, and colours.
+// The engine + expressions are character-agnostic, so you can drop in any
+// head + eye layout by writing another file shaped exactly like this one.
+// ───────────────────────────────────────────────────────────────────────────
+
+export const helloworld = {
+  id: 'helloworld',
+  viewBox: '0 0 306 306',
+
+  // The head artwork. `paths[].fill` may be 'head' | 'eye' (resolved from
+  // colours below) or any literal CSS colour. `transform` is applied to the
+  // whole group (use it to nudge the art so the eye/screen ratios line up).
+  head: {
+    transform: 'translate(0,13.2)',
+    paths: [
+      { fill: 'head', d: 'M131.31,279.37c-6.6.45-11.16-4.09-11.17-10.59l-.06-34.37-.5-3.43-12.83-.14-12.64-1.34c-31.71-4.98-58.72-27.8-69.35-58.06-.59-1.58-.69-3.34-2.7-3.64-14.52-2.11-24.11-15.27-21.68-30.31,1.43-8.82,8.4-16.93,17.26-19.68,2.17-.67,4.28-1.19,6.28-2.07,9.86-31.08,36.59-54.94,68.47-60.52,1.81-.42,4.52-1.13,6.44-1.14l46.72-.32.02-16.89c-9.61-4.53-13.45-12.73-11.29-23.15,1.28-6.2,7.84-12.48,14.03-13.35,2.85-.4,6.45-.61,9.3.02,18.07,4.41,19.41,29.92,2.17,36.33l-.02,17.09,47.34.17s4.47,1,4.47,1c32.61,4.96,60.14,29.63,70.11,61l4.97,1.33c26.47,7.07,25.21,45.22-1.67,50.19-1.04.14-3.21.72-3.49,1.63-3.32,10.75-8.65,20.02-15.58,28.66-13.9,17.09-33.17,28.38-55.07,31.75l-12.15,1.26-11.79.27-49.29,45.98c-1.83,1.7-4.12,2.16-6.27,2.31ZM209,208.38c27.22-4.7,49.31-26.66,54.16-53.54l1.06-6.51c1.16-5.76-.33-13.23-1.23-18.98l-.93-4.62-1.05-3.72c-1.62-6.19-5.22-11.91-8.76-17.21-11.47-16.01-29.55-26.72-49.19-28.61,0,0-100.23.02-100.23.02-2.74,0-5.76.8-8.27,1.32-34.3,6.79-58.62,41.43-52.63,76.02,4.05,27.73,27.19,52.09,55.09,55.95,0,0,10.74,1.19,10.74,1.19l24.96.26c5.05.05,8.43,5.22,8.49,10.03l.3,24.27c2.7-2.43,8.44-7.64,11.03-10.09,0,0,21.47-19.92,21.47-19.92,1.89-1.75,3.96-4.22,6.72-4.27,0,0,17.41-.27,17.41-.27l10.87-1.31Z' },
+    ],
+  },
+
+  colors: {
+    head:   '#262430', // Ink — the head fill
+    eye:    '#6d44e0', // Signal Violet — eyes + cursor bar
+    type:   '#6d44e0', // typed text colour
+    accent: '#6d44e0', // brand-suffix colour (the ".ie")
+  },
+
+  // All geometry expressed as ratios of the head's rendered box (w × h), so it
+  // scales to any mount size. Tune these when fitting a new head.
+  geom: {
+    transformOrigin: '50% 56%',       // pivot for whole-icon (#bot) motion
+    // the "screen" — where typed text appears, inside the head
+    screen:  { x: 0.235, yCenter: 0.505, w: 0.53, h: 0.235, fontScale: 0.82 },
+    // the two eyes: size + horizontal anchors + vertical centre (the ear-line)
+    eye:     { w: 0.072, h: 0.19, yCenter: 0.505, lx: 0.382, rx: 0.618 },
+    headWidth: 'min(88%,380px)',      // CSS width of the head art within the mount
+  },
+
+  // Optional: a brand suffix gets its own accent colour while typing, and a
+  // canned "type brand" string for the demo / loaders.
+  brandSuffix: '.ie',
+  brandText:   'HelloWorld.ie',
+};
+
+export default helloworld;

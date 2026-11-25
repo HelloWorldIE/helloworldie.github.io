@@ -9,97 +9,81 @@
 <meta name="description" content="Every HelloWorld project in one place: find a project, read about it, open its demo and browse its code.">
 <meta name="theme-color" content="#15121d">
 <link rel="icon" href="assets/bot.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="assets/brand.css?v=1">
-<link rel="stylesheet" href="assets/hub.css?v=1">
-<link rel="stylesheet" href="assets/dash.css?v=1">
-<script src="assets/theme-boot.js?v=1"></script>
+<link rel="stylesheet" href="assets/tokens.css?v=2">
+<link rel="stylesheet" href="assets/mascot/mascot.css?v=2">
+<link rel="stylesheet" href="assets/hwx.css?v=2">
+<link rel="stylesheet" href="assets/hero.css?v=2">
+<link rel="stylesheet" href="assets/hwc.css?v=2">
+<script src="assets/theme-boot.js?v=2"></script>
 </head>
 <body>
-<a class="sr-only" href="#hx-view">Skip to the projects</a>
+<a class="hw-skip" href="#hwx-view">Skip to the projects</a>
 
-<header class="hdr">
-  <div class="wrap hdr-in">
-    <a class="brand" href="#/" aria-label="HelloWorld Repository Hub, home">
-      <svg class="hw-bot is-alive" viewBox="0 0 306 306" aria-hidden="true"><g transform="translate(0,13.2)"><path fill="currentColor" d="M131.31,279.37c-6.6.45-11.16-4.09-11.17-10.59l-.06-34.37-.5-3.43-12.83-.14-12.64-1.34c-31.71-4.98-58.72-27.8-69.35-58.06-.59-1.58-.69-3.34-2.7-3.64-14.52-2.11-24.11-15.27-21.68-30.31,1.43-8.82,8.4-16.93,17.26-19.68,2.17-.67,4.28-1.19,6.28-2.07,9.86-31.08,36.59-54.94,68.47-60.52,1.81-.42,4.52-1.13,6.44-1.14l46.72-.32.02-16.89c-9.61-4.53-13.45-12.73-11.29-23.15,1.28-6.2,7.84-12.48,14.03-13.35,2.85-.4,6.45-.61,9.3.02,18.07,4.41,19.41,29.92,2.17,36.33l-.02,17.09,47.34.17s4.47,1,4.47,1c32.61,4.96,60.14,29.63,70.11,61l4.97,1.33c26.47,7.07,25.21,45.22-1.67,50.19-1.04.14-3.21.72-3.49,1.63-3.32,10.75-8.65,20.02-15.58,28.66-13.9,17.09-33.17,28.38-55.07,31.75l-12.15,1.26-11.79.27-49.29,45.98c-1.83,1.7-4.12,2.16-6.27,2.31ZM209,208.38c27.22-4.7,49.31-26.66,54.16-53.54l1.06-6.51c1.16-5.76-.33-13.23-1.23-18.98l-.93-4.62-1.05-3.72c-1.62-6.19-5.22-11.91-8.76-17.21-11.47-16.01-29.55-26.72-49.19-28.61,0,0-100.23.02-100.23.02-2.74,0-5.76.8-8.27,1.32-34.3,6.79-58.62,41.43-52.63,76.02,4.05,27.73,27.19,52.09,55.09,55.95,0,0,10.74,1.19,10.74,1.19l24.96.26c5.05.05,8.43,5.22,8.49,10.03l.3,24.27c2.7-2.43,8.44-7.64,11.03-10.09,0,0,21.47-19.92,21.47-19.92,1.89-1.75,3.96-4.22,6.72-4.27,0,0,17.41-.27,17.41-.27l10.87-1.31Z"/><g class="eyes"><path class="eye" d="M128.28,149.5c-.3,6.21-5.91,10.22-11.06,10.17-6.58-.06-11.35-4.64-11.51-11.39-.29-12.09-.48-24.24.1-36.29.29-6.13,6.2-10.25,11.44-10.15,5.94.11,10.87,4.61,11.1,11.13.41,12.06.53,24.21-.06,36.51Z"/><path class="eye" d="M200.23,150.4c-1.48,6.96-7.65,10.57-14.52,8.93-3.39-1.44-7.71-4.87-7.74-9.18l-.25-35.95c-.04-6.43,3.86-11.52,10.33-12.26,5.18-.6,11.98,3.5,12.01,9.69l.17,38.77Z"/></g></g></svg>
-      <span class="brand-name">HelloWorld</span>
-      <span class="brand-sep" aria-hidden="true"></span>
-      <span class="brand-sub">Repository Hub</span>
+<header class="hw-hdr" id="hw-hdr">
+  <div class="hw-wrap hw-hdr-in">
+    <a class="hw-brand" href="#/" aria-label="HelloWorld on GitHub, home">
+      <span class="hw-bot" id="hw-bot" aria-hidden="true"><svg class="hw-botmark " viewBox="0 0 306 306" aria-hidden="true" focusable="false"><g transform="translate(0,13.2)"><path class="hw-botmark-head" d="M131.31,279.37c-6.6.45-11.16-4.09-11.17-10.59l-.06-34.37-.5-3.43-12.83-.14-12.64-1.34c-31.71-4.98-58.72-27.8-69.35-58.06-.59-1.58-.69-3.34-2.7-3.64-14.52-2.11-24.11-15.27-21.68-30.31,1.43-8.82,8.4-16.93,17.26-19.68,2.17-.67,4.28-1.19,6.28-2.07,9.86-31.08,36.59-54.94,68.47-60.52,1.81-.42,4.52-1.13,6.44-1.14l46.72-.32.02-16.89c-9.61-4.53-13.45-12.73-11.29-23.15,1.28-6.2,7.84-12.48,14.03-13.35,2.85-.4,6.45-.61,9.3.02,18.07,4.41,19.41,29.92,2.17,36.33l-.02,17.09,47.34.17s4.47,1,4.47,1c32.61,4.96,60.14,29.63,70.11,61l4.97,1.33c26.47,7.07,25.21,45.22-1.67,50.19-1.04.14-3.21.72-3.49,1.63-3.32,10.75-8.65,20.02-15.58,28.66-13.9,17.09-33.17,28.38-55.07,31.75l-12.15,1.26-11.79.27-49.29,45.98c-1.83,1.7-4.12,2.16-6.27,2.31ZM209,208.38c27.22-4.7,49.31-26.66,54.16-53.54l1.06-6.51c1.16-5.76-.33-13.23-1.23-18.98l-.93-4.62-1.05-3.72c-1.62-6.19-5.22-11.91-8.76-17.21-11.47-16.01-29.55-26.72-49.19-28.61,0,0-100.23.02-100.23.02-2.74,0-5.76.8-8.27,1.32-34.3,6.79-58.62,41.43-52.63,76.02,4.05,27.73,27.19,52.09,55.09,55.95,0,0,10.74,1.19,10.74,1.19l24.96.26c5.05.05,8.43,5.22,8.49,10.03l.3,24.27c2.7-2.43,8.44-7.64,11.03-10.09,0,0,21.47-19.92,21.47-19.92,1.89-1.75,3.96-4.22,6.72-4.27,0,0,17.41-.27,17.41-.27l10.87-1.31Z"/><path class="hw-botmark-eye" d="M128.28,149.5c-.3,6.21-5.91,10.22-11.06,10.17-6.58-.06-11.35-4.64-11.51-11.39-.29-12.09-.48-24.24.1-36.29.29-6.13,6.2-10.25,11.44-10.15,5.94.11,10.87,4.61,11.1,11.13.41,12.06.53,24.21-.06,36.51Z"/><path class="hw-botmark-eye" d="M200.23,150.4c-1.48,6.96-7.65,10.57-14.52,8.93-3.39-1.44-7.71-4.87-7.74-9.18l-.25-35.95c-.04-6.43,3.86-11.52,10.33-12.26,5.18-.6,11.98,3.5,12.01,9.69l.17,38.77Z"/></g></svg></span>
+      <span class="hw-word" aria-hidden="true">Hello<b>World</b><span class="ie">.ie</span></span>
+      <span class="hw-sub" aria-hidden="true">on GitHub</span>
     </a>
-    <span id="hub-load" class="hub-load" role="status"><span class="spin" aria-hidden="true"></span><span class="lbl"></span></span>
-    <nav class="hdr-right" aria-label="Site">
-      <a class="btn btn-ghost btn-sm" href="dashboard/" title="The single-screen dashboard">
+    <span id="hw-load" class="hw-load" role="status" aria-hidden="true"><span class="hw-load-dot" aria-hidden="true"></span><span class="hw-load-txt"></span><span class="hw-load-n" aria-hidden="true"></span><button id="hw-load-retry" class="btn btn-quiet btn-sm" type="button" hidden>Try again</button></span>
+    <div class="hw-hdr-right">
+      <a class="btn btn-quiet btn-sm" href="dashboard/" title="The single-screen dashboard">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
-        <span class="hdr-label">Dashboard</span>
+        <span class="hw-hdr-label">Dashboard</span><span class="sr-only">The single-screen dashboard</span>
       </a>
-      <a class="btn btn-ghost btn-sm" id="gh-link" href="https://github.com/HelloWorldIE" rel="noopener noreferrer" target="_blank" title="HelloWorldIE on GitHub">
+      <a class="btn btn-quiet btn-sm" id="gh-link" href="https://github.com/HelloWorldIE" rel="noopener noreferrer" target="_blank" title="HelloWorldIE on GitHub">
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2c-3.2.7-3.88-1.37-3.88-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.8 1.19 1.83 1.19 3.09 0 4.42-2.7 5.39-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .5Z"/></svg>
-        <span class="hdr-label">GitHub</span>
+        <span class="hw-hdr-label">GitHub</span><span class="sr-only">HelloWorldIE on GitHub (opens in a new tab)</span>
       </a>
-      <button id="theme-btn" class="btn btn-ghost btn-sm btn-icon" type="button" aria-pressed="false" title="Dark mode">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
-        <span class="sr-only">Dark mode</span>
-      </button>
-      <span id="who" class="who" hidden></span>
-      <button id="signin-btn" class="btn btn-primary btn-sm" type="button">Sign in</button>
-      <button id="signout-btn" class="btn btn-sm" type="button" hidden>Sign out</button>
-    </nav>
+      <button id="theme-btn" class="btn hw-theme" type="button" aria-pressed="false" aria-label="Switch to dark mode"></button>
+      <span id="who" class="hw-who" hidden></span>
+      <button id="signin-btn" class="btn btn-primary btn-sm" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>Sign in</button>
+      <button id="signout-btn" class="btn btn-quiet btn-sm" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>Sign out</button>
+    </div>
   </div>
 </header>
 
-<section class="hero" aria-labelledby="hero-title">
-  <div class="wrap hero-in">
-    <div class="hero-head">
-      <h1 id="hero-title">Everything HelloWorld builds, <em>in one place</em></h1>
-      <p id="hero-sub">Find a project, read about it, try its demo and browse its code.</p>
-    </div>
-    <div id="hero-dash" class="hero-dash"></div>
-    <p id="hero-note" class="hero-note" hidden></p>
-  </div>
-</section>
+<div id="hwh-hero"></div>
 
-<div class="xbar">
-  <div class="wrap xbar-in">
-    <nav class="tabs" aria-label="Views">
-      <a class="tab" href="#/" data-tab="discover">Discover</a>
-      <a class="tab" href="#/all" data-tab="all">All projects</a>
-      <a class="tab" href="#/categories" data-tab="categories">Categories</a>
-      <a class="tab" href="#/world" data-tab="world" hidden>World</a>
-      <a class="tab" href="#/health" data-tab="health" hidden>Health</a>
-    </nav>
-    <div class="search" role="search">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-      <input id="q" class="field" type="search" placeholder="Search projects, languages, tools" aria-label="Search projects" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="suggest" aria-autocomplete="list">
-      <ul id="suggest" class="suggest" role="listbox" aria-label="Matching projects" hidden></ul>
+<div id="hwx-nav" class="hwx-nav">
+  <div class="hw-wrap hwx-nav-in">
+    <div class="hwx-nav-row">
+      <nav id="hwx-tabs" class="hwx-tabs" aria-label="Views"></nav>
     </div>
-    <div class="seg" role="group" aria-label="Detail level">
-      <button type="button" data-level="overview" aria-pressed="true">Overview</button>
-      <button type="button" data-level="built" aria-pressed="false">How it's built</button>
-      <button type="button" data-level="code" aria-pressed="false">Code</button>
+    <div class="hwx-nav-row">
+      <nav id="hwx-crumbs" class="hwx-crumbs" aria-label="Breadcrumb"></nav>
+      <div id="hwx-search" class="hwx-search" role="search">
+        <svg class="hwx-search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <label class="sr-only" for="hwx-q">Search projects</label>
+        <input id="hwx-q" class="field" type="search" placeholder="Search projects, tools or live sites" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="hwx-suggest" aria-autocomplete="list">
+        <button id="hwx-q-x" class="btn btn-quiet btn-icon hwx-search-x" type="button" aria-label="Clear the search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        <ul id="hwx-suggest" class="hwx-suggest" role="listbox" aria-label="Matching projects" hidden></ul>
+      </div>
+      <div class="hwx-level-wrap"><span class="hwx-level-label" id="hwx-level-l">Detail</span><div id="hwx-level" class="hwx-seg" role="radiogroup" aria-labelledby="hwx-level-l"></div></div>
     </div>
   </div>
 </div>
 
-<main id="hx-view" class="wrap view" tabindex="-1" aria-live="off"></main>
+<main id="hwx-view" class="hw-wrap hwx-view" tabindex="-1" aria-live="off"></main>
 
-<footer class="ftr">
-  <div class="wrap ftr-in">
-    <svg class="hw-bot " viewBox="0 0 306 306" aria-hidden="true"><g transform="translate(0,13.2)"><path fill="currentColor" d="M131.31,279.37c-6.6.45-11.16-4.09-11.17-10.59l-.06-34.37-.5-3.43-12.83-.14-12.64-1.34c-31.71-4.98-58.72-27.8-69.35-58.06-.59-1.58-.69-3.34-2.7-3.64-14.52-2.11-24.11-15.27-21.68-30.31,1.43-8.82,8.4-16.93,17.26-19.68,2.17-.67,4.28-1.19,6.28-2.07,9.86-31.08,36.59-54.94,68.47-60.52,1.81-.42,4.52-1.13,6.44-1.14l46.72-.32.02-16.89c-9.61-4.53-13.45-12.73-11.29-23.15,1.28-6.2,7.84-12.48,14.03-13.35,2.85-.4,6.45-.61,9.3.02,18.07,4.41,19.41,29.92,2.17,36.33l-.02,17.09,47.34.17s4.47,1,4.47,1c32.61,4.96,60.14,29.63,70.11,61l4.97,1.33c26.47,7.07,25.21,45.22-1.67,50.19-1.04.14-3.21.72-3.49,1.63-3.32,10.75-8.65,20.02-15.58,28.66-13.9,17.09-33.17,28.38-55.07,31.75l-12.15,1.26-11.79.27-49.29,45.98c-1.83,1.7-4.12,2.16-6.27,2.31ZM209,208.38c27.22-4.7,49.31-26.66,54.16-53.54l1.06-6.51c1.16-5.76-.33-13.23-1.23-18.98l-.93-4.62-1.05-3.72c-1.62-6.19-5.22-11.91-8.76-17.21-11.47-16.01-29.55-26.72-49.19-28.61,0,0-100.23.02-100.23.02-2.74,0-5.76.8-8.27,1.32-34.3,6.79-58.62,41.43-52.63,76.02,4.05,27.73,27.19,52.09,55.09,55.95,0,0,10.74,1.19,10.74,1.19l24.96.26c5.05.05,8.43,5.22,8.49,10.03l.3,24.27c2.7-2.43,8.44-7.64,11.03-10.09,0,0,21.47-19.92,21.47-19.92,1.89-1.75,3.96-4.22,6.72-4.27,0,0,17.41-.27,17.41-.27l10.87-1.31Z"/><g class="eyes"><path class="eye" d="M128.28,149.5c-.3,6.21-5.91,10.22-11.06,10.17-6.58-.06-11.35-4.64-11.51-11.39-.29-12.09-.48-24.24.1-36.29.29-6.13,6.2-10.25,11.44-10.15,5.94.11,10.87,4.61,11.1,11.13.41,12.06.53,24.21-.06,36.51Z"/><path class="eye" d="M200.23,150.4c-1.48,6.96-7.65,10.57-14.52,8.93-3.39-1.44-7.71-4.87-7.74-9.18l-.25-35.95c-.04-6.43,3.86-11.52,10.33-12.26,5.18-.6,11.98,3.5,12.01,9.69l.17,38.77Z"/></g></g></svg>
+<footer class="hw-ftr">
+  <div class="hw-wrap hw-ftr-in">
+    <svg class="hw-botmark " viewBox="0 0 306 306" aria-hidden="true" focusable="false"><g transform="translate(0,13.2)"><path class="hw-botmark-head" d="M131.31,279.37c-6.6.45-11.16-4.09-11.17-10.59l-.06-34.37-.5-3.43-12.83-.14-12.64-1.34c-31.71-4.98-58.72-27.8-69.35-58.06-.59-1.58-.69-3.34-2.7-3.64-14.52-2.11-24.11-15.27-21.68-30.31,1.43-8.82,8.4-16.93,17.26-19.68,2.17-.67,4.28-1.19,6.28-2.07,9.86-31.08,36.59-54.94,68.47-60.52,1.81-.42,4.52-1.13,6.44-1.14l46.72-.32.02-16.89c-9.61-4.53-13.45-12.73-11.29-23.15,1.28-6.2,7.84-12.48,14.03-13.35,2.85-.4,6.45-.61,9.3.02,18.07,4.41,19.41,29.92,2.17,36.33l-.02,17.09,47.34.17s4.47,1,4.47,1c32.61,4.96,60.14,29.63,70.11,61l4.97,1.33c26.47,7.07,25.21,45.22-1.67,50.19-1.04.14-3.21.72-3.49,1.63-3.32,10.75-8.65,20.02-15.58,28.66-13.9,17.09-33.17,28.38-55.07,31.75l-12.15,1.26-11.79.27-49.29,45.98c-1.83,1.7-4.12,2.16-6.27,2.31ZM209,208.38c27.22-4.7,49.31-26.66,54.16-53.54l1.06-6.51c1.16-5.76-.33-13.23-1.23-18.98l-.93-4.62-1.05-3.72c-1.62-6.19-5.22-11.91-8.76-17.21-11.47-16.01-29.55-26.72-49.19-28.61,0,0-100.23.02-100.23.02-2.74,0-5.76.8-8.27,1.32-34.3,6.79-58.62,41.43-52.63,76.02,4.05,27.73,27.19,52.09,55.09,55.95,0,0,10.74,1.19,10.74,1.19l24.96.26c5.05.05,8.43,5.22,8.49,10.03l.3,24.27c2.7-2.43,8.44-7.64,11.03-10.09,0,0,21.47-19.92,21.47-19.92,1.89-1.75,3.96-4.22,6.72-4.27,0,0,17.41-.27,17.41-.27l10.87-1.31Z"/><path class="hw-botmark-eye" d="M128.28,149.5c-.3,6.21-5.91,10.22-11.06,10.17-6.58-.06-11.35-4.64-11.51-11.39-.29-12.09-.48-24.24.1-36.29.29-6.13,6.2-10.25,11.44-10.15,5.94.11,10.87,4.61,11.1,11.13.41,12.06.53,24.21-.06,36.51Z"/><path class="hw-botmark-eye" d="M200.23,150.4c-1.48,6.96-7.65,10.57-14.52,8.93-3.39-1.44-7.71-4.87-7.74-9.18l-.25-35.95c-.04-6.43,3.86-11.52,10.33-12.26,5.18-.6,11.98,3.5,12.01,9.69l.17,38.77Z"/></g></svg>
     <span>HelloWorld</span>
-    <a href="https://helloworld.ie" rel="noopener noreferrer" target="_blank">helloworld.ie</a>
+    <a href="https://helloworld.ie" rel="noopener noreferrer" target="_blank">helloworld.ie<span class="sr-only"> (opens in a new tab)</span></a>
     <span class="grow"></span>
     <span>This page keeps no project data. It reads GitHub with your own access.</span>
   </div>
 </footer>
 
 <div id="announce" class="sr-only" aria-live="polite"></div>
-<div id="toasts" class="toast-host" aria-live="polite"></div>
+<div id="toasts" class="hw-toasts"></div>
+<div id="hw-curtain" class="hw-curtain" aria-hidden="true" hidden><i></i><i></i></div>
 
-<dialog id="signin-dlg" class="dlg" aria-labelledby="signin-title">
-  <form method="dialog" class="dlg-in" id="signin-form" novalidate>
-    <button class="btn btn-ghost btn-icon btn-sm dlg-close" value="cancel" formnovalidate aria-label="Close">
+<dialog id="signin-dlg" class="hw-dlg" aria-labelledby="signin-title">
+  <form method="dialog" class="hw-dlg-in" id="signin-form" novalidate>
+    <button class="btn btn-quiet btn-icon btn-sm hw-dlg-close" value="cancel" formnovalidate aria-label="Close">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
     </button>
     <h2 id="signin-title">Sign in</h2>
@@ -130,14 +114,19 @@
   </form>
 </dialog>
 
-<dialog id="full-dlg" class="full" aria-label="Viewer"></dialog>
+<dialog id="full-dlg" class="hw-full" aria-label="Viewer"></dialog>
 
-<script src="assets/hub-config.js?v=1"></script>
-<script src="assets/gh.js?v=1"></script>
+<script src="assets/hub-config.js?v=2"></script>
+<script src="assets/gh.js?v=2"></script>
 <script src="assets/vendor/marked-12.0.2.min.js"></script>
 <script src="assets/vendor/purify-3.1.6.min.js"></script>
 <script src="assets/vendor/highlight-11.9.0.min.js"></script>
-<script src="assets/dash.js?v=1"></script>
-<script src="assets/hub.js?v=1"></script>
+<script src="assets/vendor/gsap-3.12.5.min.js"></script>
+<script src="assets/hwx-vocab.js?v=2"></script>
+<script src="assets/hwx-data.js?v=2"></script>
+<script src="assets/hub-shell.js?v=2"></script>
+<script src="assets/hero.js?v=2"></script>
+<script src="assets/hwx-views.js?v=2"></script>
+<script src="assets/hwc-ui.js?v=2"></script>
 </body>
 </html>

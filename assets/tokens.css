@@ -1,0 +1,233 @@
+/* ============================================================================
+   HelloWorld brand tokens for the repository hub
+   ----------------------------------------------------------------------------
+   Taken from HelloWorld's own platform (surfaced-rebuild). Nothing here is
+   invented: every value names the file it comes from. Where the hub needs a
+   value the source does not have, the comment says so.
+
+     surfaced-rebuild/public/css/brand.css   palette, role tokens, light + dark
+     surfaced-rebuild/public/css/site.css    spacing, type scale, widths, pills
+     surfaced-rebuild/public/css/shell.css   dashboard density, status, easing
+     surfaced-rebuild/public/css/hw.css      buttons
+     surfaced-rebuild/emails/layout.js       status tones as solid hex
+     surfaced-rebuild/site/cover.js          generated cover art grounds
+
+   Light is the default. Dark is a full peer, switched by data-theme="dark" on
+   <html> (the site stores the choice in localStorage key "sf-t"). The dark
+   block also works on any element, so one always-dark band can carry
+   data-theme="dark" inside a light page.
+
+   Read BRAND-BRIEF.md before using these. The short version: paper and ink
+   lead, one violet does the signalling, Plus Jakarta Sans only.
+   ========================================================================== */
+
+/* ---- Font: self-hosted Plus Jakarta Sans, variable 200 to 800 ----
+   From public/css/brand.css (self-hosted for GDPR: no request to Google).
+   Files are in brand/assets/fonts/; adjust the url() paths to where the hub
+   serves them. */
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url("fonts/plus-jakarta-sans-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url("fonts/plus-jakarta-sans-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  /* ======================================================================
+     1. FIXED PALETTE: never changes with the theme (public/css/brand.css)
+     ====================================================================== */
+  --violet:      #6d44e0;  /* Signal Violet. THE accent. Links, the one primary button, the bot's eyes on light, the ".ie" and "World" in the wordmark. 5.91:1 on white, 5.50:1 on paper. Keep it to about 13% of any layout (Brand Guide, "Balance"). */
+  --lilac:       #a98bff;  /* Bright Violet. The accent on dark grounds (text, links, eyes, eyebrows on void). 6.89:1 on void. Never as text on light (2.68:1 on white). */
+  --deep-violet: #4a2bb0;  /* Deep Violet. Sparing: gradient end, primary button hover, AAA text on white (9.28:1). About 5% of a layout. Called --magenta in the source CSS (historical name). */
+  --magenta:     var(--deep-violet); /* Alias kept so code copied from the site still works. It is violet, not magenta. */
+  --ink:         #262430;  /* Brand ink, near-black with a violet cast. Text on light, the bot's head on light. 14.18:1 on paper. Never pure #000. */
+  --void:        #15121d;  /* Deepest dark surface. The dark page ground, the always-dark band, the film ground. */
+  --void-2:      #1b1726;  /* Raised dark surface: cards and panels in dark mode, the ink app tile. */
+  --paper:       #f7f6fb;  /* Off-white ground with a violet cast. The light page. Never pure #fff for a page. */
+  --paper-2:     #efedf5;  /* Faint panel on light: soft sections, table heads, inactive chips. */
+  --mist:        #e3e0ec;  /* Hairline and light grey: empty ring tracks, quiet bars. */
+  --white:       #ffffff;  /* Cards on light sit on pure white over paper. */
+  --bot-head-on-dark: #f2f0f8; /* The bot's head colour on dark (brand.js scheme "dark"). */
+  --bot-eye-on-tile:  #2a1656; /* The bot's eyes on the violet app tile (favicon.svg). Only there. */
+
+  /* Functional colours: status only, never decoration (public/css/brand.css, shell.css) */
+  --green:   #16a34a;  /* Passing, done, ticks. 3.30:1 on white, so use it for fills, rings and icons; use --green-d for green words. */
+  --green-d: #15803d;  /* Green as text on light (5.02:1 on white). */
+  --amber:   #f59e0b;  /* Warning fill and the "unsaved" dot. Use --warn for amber words. */
+  --no:      #a23b3b;  /* "Don't" red and form errors on the site (6.51:1 on white). */
+  --slate:   #908d99;  /* "Not cited", muted UI (Brand Guide swatch). 3.03:1 on paper: never body text. */
+
+  /* ======================================================================
+     2. GRADIENTS: the only ones the brand uses
+     ====================================================================== */
+  --grad:       linear-gradient(120deg, var(--violet), var(--magenta)); /* Milestones only: the CTA band, the reward band, a primary emphasis (brand.css; bible 8 "Gradient"). Not on buttons. */
+  --grad-soft:  linear-gradient(120deg, color-mix(in srgb, var(--violet) 12%, transparent), color-mix(in srgb, var(--magenta) 12%, transparent)); /* The callout's pale wash (site.css .callout). */
+  --grad-pill:  linear-gradient(90deg, var(--violet), var(--lilac)); /* The eyebrow's 22 x 8 px pill (site.css .eyebrow::before). */
+  --grad-bar:   linear-gradient(90deg, var(--violet), var(--magenta)); /* Progress and reading bars, form meter (site.css .read-bar, .form-meter). */
+  --grad-cover-violet: linear-gradient(125deg, #6d44e0 0%, #4a2bb0 100%); /* Generated cover ground "guides" (site/cover.js KINDS). */
+  --grad-cover-dark:   linear-gradient(125deg, #1b1726 0%, #15121d 100%); /* Generated cover ground "glossary" (site/cover.js). */
+  --grad-cover-deep:   linear-gradient(125deg, #4a2bb0 0%, #2a1656 100%); /* Generated cover ground "local" (site/cover.js). */
+  --grad-cover-ink:    linear-gradient(125deg, #262430 0%, #4a2bb0 120%); /* Generated cover ground "compare" (site/cover.js). */
+  --glow-light: radial-gradient(120% 90% at 88% 6%, color-mix(in srgb, var(--violet) 11%, transparent), transparent 55%); /* The one soft violet light in a light hero corner (HelloWorld_brand/HelloWorld Brand Book.html .cover2). Layer it over --paper. */
+  --glow-dark:  radial-gradient(120% 90% at 85% 8%, color-mix(in srgb, var(--violet) 18%, transparent), transparent 55%); /* The same light on void (HelloWorld Landing Page.html .band, applications.css). */
+
+  /* ======================================================================
+     3. ROLE TOKENS, LIGHT (default). Build components from these, not from
+        the fixed palette, so they flip with the theme. (brand.css section 2)
+     ====================================================================== */
+  --surface:   var(--paper);                       /* Page ground. */
+  --surface-2: var(--paper-2);                     /* Soft section, inactive chip, table head. */
+  --card:      #ffffff;                            /* Cards, panels, the answer card, form fields. */
+  --text:      var(--ink);                         /* Headings and body. */
+  --text-2:    oklch(0.235 0.022 288 / 0.80);      /* Secondary text, leads, card body. About #504e59 on paper, 7.59:1. */
+  --text-dim:  oklch(0.235 0.022 288 / 0.60);      /* Labels, meta, captions. About #7a7881 on paper: only 4.05:1, so 14px semibold or larger, or non-essential text. */
+  --text-dim-aa: #6b6880;                          /* NOT in brand.css: the solid dim the emails use (emails/layout.js C.dim), 5.36:1 on white. Use it for small dim text that must pass AA. */
+  --line-role: oklch(0.235 0.022 288 / 0.12);      /* Every border and divider. */
+  --accent:    var(--violet);                      /* The one accent: links, focus ring, active state, eyebrow text. */
+  --accent-on-accent: #ffffff;                     /* Words on a violet fill (5.91:1). */
+
+  /* Status tones (shell.css; emails/layout.js TONES gives the solid versions) */
+  --good:    var(--green);                         /* Passing. */
+  --warn:    #b45309;                              /* Amber words (5.02:1 on white). */
+  --bad:     #b42318;                              /* Failing (6.57:1 on white). */
+  --good-bg: color-mix(in srgb, var(--green) 10%, transparent);
+  --warn-bg: color-mix(in srgb, #f59e0b 14%, transparent);
+  --bad-bg:  color-mix(in srgb, #b42318 10%, transparent);
+  --info-bg: color-mix(in srgb, var(--accent) 10%, transparent);
+
+  /* The eye pill and ghost bot strengths (site.css, shell.css) */
+  --decor-fill: color-mix(in srgb, var(--violet) 11%, transparent); /* .decor pill in a hero or section corner; link-card corner pill uses this too. */
+  --decor-line: color-mix(in srgb, var(--violet) 22%, transparent); /* .decor--outline: 5px border. */
+  --card-eye-1: color-mix(in srgb, var(--violet) 5%, transparent);  /* Info card eye, fill (site.css .info-card::after). */
+  --card-eye-2: color-mix(in srgb, var(--lilac) 10%, transparent);  /* Info card eye, second position. */
+  --card-eye-3: color-mix(in srgb, var(--violet) 9%, transparent);  /* Info card eye, 4px outline (third position). */
+  --card-eye-4: color-mix(in srgb, var(--lilac) 16%, transparent);  /* Info card eye, 4px outline (fourth position). */
+  --ghostbot-opacity: .05;                         /* Bot silhouette watermark behind a section (site.css .ghostbot). */
+
+  /* Shadows (brand.css). Violet-tinted, soft, low. Never a hard drop shadow. */
+  --shadow:    0 6px 24px oklch(0.235 0.022 288 / 0.08);       /* Resting card, ghost button, section art. */
+  --shadow-lg: 0 30px 80px -40px oklch(0.52 0.21 286 / 0.40);  /* Lifted card on hover, the answer card, forms, toasts. */
+  --shadow-btn: 0 8px 22px color-mix(in srgb, var(--violet) 28%, transparent);       /* Primary button (hw.css). */
+  --shadow-btn-hover: 0 12px 28px color-mix(in srgb, var(--violet) 38%, transparent); /* Primary button, hover. */
+  --shadow-mascot: drop-shadow(0 18px 30px rgba(38, 36, 48, .28)); /* filter: on the bot when it sits over a card (site.css .mascot-wrap). */
+  --shadow-art-card: 0 40px 80px -30px rgba(10, 6, 30, .55), 0 0 0 1px rgba(255, 255, 255, .08); /* The tilted UI card in generated cover art (site/cover.js). */
+
+  /* ======================================================================
+     4. TYPE (site.css type scale; brand.css; Brand Guide)
+     ====================================================================== */
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif; /* The only typeface. Headlines, body, UI, labels, numbers. */
+  --font-mono: var(--font-sans);  /* Deliberate: there is NO monospace in this brand (brand.css: "NO real monospace, brand rule"). Labels are tracked uppercase Jakarta. */
+  --font-code: var(--font-sans);  /* Code examples also use the brand font (SITE-TEMPLATE-BIBLE.md section 5, "Code"). A monospace for code in the hub would be a new exception Bryan must approve. */
+  --font-bank-codes: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace; /* The ONLY approved monospace: IBAN and BIC (UI-UX-POLICY.md 12, 23 Nov 2026). Not for the hub. */
+
+  --fs-display: clamp(46px, 6.8vw, 84px); /* One per site: the home title. weight 800, tracking -0.035em, line-height 1.04. */
+  --fs-h1:      clamp(38px, 5.4vw, 64px); /* Page titles. weight 800, -0.035em, 1.04. */
+  --fs-h2:      clamp(28px, 3.5vw, 42px); /* Section headings. weight 700, -0.03em, 1.08. */
+  --fs-h3:      19px;                     /* Card titles. weight 700, -0.015em, 1.28. */
+  --fs-lead:    clamp(18px, 1.8vw, 21px); /* The lead under a title. weight 400, 1.5, colour --text-2. */
+  --fs-body:    16.5px;                   /* Reading text, line-height 1.62. */
+  --fs-small:   14px;                     /* Notes, meta. */
+  --fs-eyebrow: 14px;                     /* Site eyebrow: weight 700, sentence case, accent colour, after the gradient pill. */
+  --fs-label:   11.5px;                   /* Tracked uppercase label (.k, .cat): weight 800, letter-spacing .1em to .12em. */
+  --fs-app:     14px;                     /* Dashboard base size (UI-RETHINK section 9). Dense lists 13px. */
+
+  --track-display: -0.035em;  /* Display and h1. */
+  --track-h2:      -0.03em;   /* h2, wordmark. */
+  --track-h3:      -0.015em;  /* Card titles. */
+  --track-body:    -0.01em;   /* Body (brand.css body letter-spacing). */
+  --track-label:    0.12em;   /* Uppercase labels: .1em to .16em; never on body text. */
+
+  /* ======================================================================
+     5. SPACE, WIDTH, RADIUS (site.css; SITE-TEMPLATE-BIBLE.md section 2)
+     ====================================================================== */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px; --s-5: 24px;
+  --s-6: 32px; --s-7: 48px; --s-8: 64px; --s-9: 96px;  /* Every gap is one of these. */
+  --gutter:   24px;                        /* Between cards, rows and columns. One gutter everywhere. */
+  --card-pad: 26px;                        /* Site cards 26px; dashboard cards 24px (UI-UX-POLICY 2). */
+  --sec-y:    clamp(64px, 8vw, 104px);     /* A section's top and bottom padding. */
+  --pad:      clamp(20px, 4vw, 80px);      /* Side padding, growing with the screen. 16px on phones. */
+  --maxw:     1520px;                      /* Layout width: about 1360px of content on a 1920px screen ("wide, with margins", owner 26 Oct 2026). */
+  --read:     720px;                       /* Reading block for body-size text (about 70 characters). */
+  --read-lead: 860px;                      /* Reading block for lead-size text. */
+
+  --r-card: 16px;   /* Every card, callout, table, screenshot frame. */
+  --r-sm:   10px;   /* Small controls, rows, inner boxes. */
+  --r-field: 12px;  /* Inputs and choice rows. */
+  --r-band: 28px;   /* The CTA band. */
+  --r-pill: 999px;  /* Buttons (site), chips, the eye pill, eyebrows. */
+  --r-tile: 21%;    /* App tile: rx 64 on a 306 box (brand.js). */
+  --pill-ratio: 2 / 5; /* The eye pill: width to height 2:5, fully rounded. The brand's one shape. */
+
+  /* ======================================================================
+     6. MOTION (shell.css, site.css, public/mascot, promo films)
+     ====================================================================== */
+  --ease-life:   cubic-bezier(.34, 1.4, .5, 1);  /* The dashboard's "alive" ease with a little overshoot (shell.css). Icons, entrances, morphs. */
+  --t-life:      .55s;
+  --ease-settle: cubic-bezier(.2, .8, .2, 1);    /* Rise-in, FAQ open, page-flip lift, card lift in the dashboard. */
+  --ease-card:   cubic-bezier(.2, .7, .3, 1);    /* Link card lift on the site (.18s). */
+  --ease-pop:    cubic-bezier(.3, 1.6, .5, 1);   /* Ticks drawing in, done markers. */
+  --ease-toast:  cubic-bezier(.2, .9, .3, 1.2);  /* Toasts and the consent card arriving. */
+  --ease-ring:   cubic-bezier(.25, .6, .3, 1);   /* The light that runs once round a clickable card's border (1.5s). */
+  --ease-film:   cubic-bezier(.37, 0, .63, 1);   /* Sine in-out: the films' text fades and capsule curtain (approximation of (1-cos(pi p))/2 in scripts/promo/stage-v12.js). */
+  --ease-cursor: cubic-bezier(.4, 0, .2, 1);     /* The demo cursor's travel, 1.1s (scripts/promo/capture-framed-products.js). */
+  --t-hover:  .18s;   /* Colour, border and lift on hover (site.css). Always eased both ways. */
+  --t-border: .6s;    /* A clickable card's border easing to violet (UI-UX-POLICY 5). */
+  --t-rise:   .75s;   /* Scroll-in rise: opacity .6s + 18px translate .75s, 80ms apart (site.css .rv). */
+  --t-fade-film: .8s; /* Film text entrance: opacity only, 150ms apart (stage-v12.js). */
+  --stagger:  80ms;
+}
+
+/* ============================================================================
+   DARK. A first-class peer, not an accent (HelloWorld_brand/CLAUDE.md,
+   "Layout LOCKED"). Same components, flipped roles. (brand.css section 2b,
+   shell.css, site.css)
+   ========================================================================== */
+:root[data-theme="dark"],
+[data-theme="dark"] {
+  --surface:   var(--void);                        /* Page ground #15121d. */
+  --surface-2: var(--void-2);                      /* Soft section #1b1726. */
+  --card:      var(--void-2);                      /* Cards and panels #1b1726. */
+  --text:      var(--paper);                       /* 17.19:1 on void. */
+  --text-2:    oklch(0.975 0.004 288 / 0.82);      /* About #cecdd3, 11.7:1. */
+  --text-dim:  oklch(0.975 0.004 288 / 0.62);      /* About #a19fa7, 7.09:1: passes AA, unlike the light dim. */
+  --text-dim-aa: var(--text-dim);
+  --line-role: oklch(1 0 0 / 0.12);                /* Hairlines are white at 12%. */
+  --accent:    var(--lilac);                       /* The accent becomes Bright Violet. Signal Violet is only 3.13:1 on void, so never violet words on dark. */
+  --accent-on-accent: #ffffff;                     /* Primary buttons stay a violet (#6d44e0) fill with white words in dark (hw.css). */
+
+  --good: #4ade80;  /* shell.css dark overrides */
+  --warn: #f5b84a;
+  --bad:  #ff7a70;
+
+  --decor-fill: color-mix(in srgb, var(--lilac) 9%, transparent);  /* site.css dark pill */
+  --decor-line: color-mix(in srgb, var(--lilac) 20%, transparent);
+  --ghostbot-opacity: .07;                                           /* site.css: 7% in dark, 10% on a dark band */
+  --shadow-mascot: drop-shadow(0 18px 30px rgba(0, 0, 0, .45));
+  --band-dark: color-mix(in srgb, var(--violet) 16%, var(--void));   /* About #231a3c: in dark mode the "always dark" band takes this violet-tinted ground so it still reads as a band (site.css). */
+}
+
+/* Dark-context helpers for always-dark pieces inside a light page
+   (brand.css "fixed dark-context helpers"). */
+:root {
+  --dim-dark:  oklch(0.975 0.004 288 / 0.62);  /* Dim words on void. */
+  --line-dark: oklch(1 0 0 / 0.12);            /* Hairline on void. */
+  --theme-color: #6d44e0;                      /* <meta name="theme-color">, web manifest (public/site.webmanifest). */
+}
+
+/* Reduced motion: the brand switches all movement off, always
+   (UI-UX-POLICY.md 6). Words, ticks and final states stay. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --t-hover: 0s; --t-border: 0s; --t-rise: 0s; --t-life: 0s; --t-fade-film: 0s; --stagger: 0ms;
+  }
+}

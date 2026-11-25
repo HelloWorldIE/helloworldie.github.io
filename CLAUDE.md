@@ -5,113 +5,115 @@ project are in `../CLAUDE.md` (the `helloworldGitub` control folder); this file 
 
 ## What this is
 
-The **repository hub** for the `HelloWorldIE` GitHub account: one page to find a project, read about
-it, try its demo and browse its code. Served by GitHub Pages from `main` at
-https://helloworldie.github.io/. **This repo is public.** It holds no project data: everything is
-read from GitHub at run time with the viewer's own access, so a signed-out visitor sees public
-repos only. Never put client names, private repo names or anything private in this repo.
+The **repository hub** for the `HelloWorldIE` GitHub account: find a project, read about it, try
+its demo, follow its guides, browse its code, and walk through the City, where every project is a
+building. Served by GitHub Pages from `main` at https://helloworldie.github.io/. **This repo is
+public.** It holds no project data: everything is read from GitHub at run time with the viewer's
+own access, so a signed-out visitor sees public repos only. Never put client names, private repo
+names or anything private in this repo.
 
-Not a marketing site: no sales copy. It is HelloWorld-branded (the bot mark, Signal Violet, Plus
-Jakarta Sans; tokens in `assets/brand.css`, from the HelloWorld brand guide). Light by default; dark is a full alternative chosen
-with the switch and remembered in `localStorage['hw_theme']`; the device setting alone never
-switches it.
+The explorer, header and City began as a port of another workspace's hub (Bryan, 2026-11-26), then
+redesigned in the HelloWorld brand. Nothing of that company may come back: run `hw-gh gate` before
+every commit (it checks the deny list kept outside every repo).
+
+## The brand (read before changing anything you can see)
+
+`../brand/BRAND-BRIEF.md` is the design authority; section 14 is the hub's spec. In short: light by
+default and dark as a full peer (role tokens in `assets/tokens.css`; the switch writes
+`localStorage['hw_theme']` and fires `hw-theme` on `document`); one accent, Signal Violet
+`#6d44e0` (Bright Violet `#a98bff` on dark), about 10 to 13% of a view; categories and stages told
+apart by place and words, never hue; Plus Jakarta Sans only (self-hosted in `assets/fonts/`), no
+monospace except a file's text in the code browser; no glass, blur, glow, neon, particles, planets
+or spinners; motion "organic, natural, living" (the `--ease-*` tokens), with full reduced-motion
+support; the eye pill (2:5 capsule) as the only shape; the bot is the real mascot engine, alive and
+meaningful, one per view, never 3D; a rounded element has a full border or none.
 
 ## Files
 
-| Path | What it is |
-|---|---|
-| `index.html` | The hub page: header, the dashboard band, the explorer bar, `#hx-view`, dialogs. No inline script. |
-| `assets/theme-boot.js` | Runs first: applies the saved theme, hides the page if framed. |
-| `assets/hub-config.js` | **Generated** by `hw-gh hub-config` from `../config/github.json` (categories, colours, kinds, statuses, limits). Never edit by hand. |
-| `assets/gh.js` | `window.HWGH`: sign-in, repo list, details (card, README, languages, last change), the card check (`cleanCard`), `info()` (one merged picture of a project), files and pictures with the viewer's token. |
-| `assets/hub.js` | Router and views: Discover, All, Categories, World, Health, project pages, demo viewer, picture lightbox, guide viewer, code browser, search, sign-in dialog, load status. |
-| `assets/dash.js`, `assets/dash.css` | `window.HWDash`: the four-card dashboard (Codebase, Languages, Activity, Live), used as the band on the hub and full window on `dashboard/`. |
-| `assets/world.js` | The World view (ES module, three.js), loaded only when `#/world` opens. |
-| `dashboard/index.html`, `assets/dashboard-page.js` | The single-screen dashboard page, with Live and Demo data. |
-| `assets/brand.css`, `assets/hub.css` | Tokens and base elements; the hub's layout and components. |
-| `assets/vendor/` | Pinned copies of marked 12.0.2, DOMPurify 3.1.6, highlight.js 11.9.0 and three.js r169. Each was checked against a second CDN before it was added. Replace a library as a whole, never edit it. |
-| `assets/bot.svg` | The favicon (the bot, with a dark-mode variant). |
-| `hub/project.json` | This repo's own hub card. |
+| Path | What it is | Global |
+|---|---|---|
+| `index.html` | The page: head and CSP, header, `#hwh-hero`, the explorer bar, `#hwx-view`, dialogs. No inline script. | |
+| `assets/theme-boot.js` | First script: applies the saved theme, hides the page if framed. | |
+| `assets/tokens.css` | Brand tokens (light `:root`, dark `[data-theme="dark"]`), font faces. Loaded first. | |
+| `assets/hub-config.js` | **Generated** by `hw-gh hub-config` from `../config/github.json`. Never edit. | `HW_CONFIG` |
+| `assets/gh.js` | Data and sign-in: repos, details, card checks (`cleanCard`), files and pictures with the viewer's token, read-only `api`/`graphql`, trees with `sha`, `lastCommitFor`, `trackLoad`. | `HWGH` |
+| `assets/hwx-vocab.js` | Vocabulary built from the config (categories, stages, kinds, audiences, platforms, terms), icons, art helpers and `HWX.coverSVG` (generated covers in helloworld.ie's recipe). | `HWX` |
+| `assets/hwx-data.js` | The adapter the views use: `HWX.info`, `list`, `index`, `recent`, `image`, `md`, `level`, `onRepos`, `whenDetails`. | `HWX` |
+| `assets/hub-shell.js` | Shell services: theme, sign-in dialog (GitHub App and token), toasts, copy, the sealed demo viewer with its confirm screen, lightbox, guide viewer, `HWLoad` and the bot loader, the capsule curtain. | `HWShell`, `HWLoad` |
+| `assets/hwx-views.js`, `assets/hwx.css` | The router and every view (below), cards, project pages, detail levels, search. `hwx.css` also holds the base classes (`.btn`, `.field`, `.eyebrow`, `.cat`, `.badge`, `.decor`). | `HWX.render`, `HWX.go` |
+| `assets/hero.js`, `assets/hero.css` | The header: title and four animated cards (Projects, Last changes, Latest update, Rules passing) with the bot narrating the load; also full-window mode for `/dashboard/`. | `HWHero` |
+| `assets/hwc-ui.js`, `assets/hwc.css` | The City's page side: the `#/city` view, panels, key, search, tours, Projects list, the project slide and the Discover card. Loads the City module on demand. | `HWX.views.city`, `HWX.citySlide`, `HWX.citySearch`, `HWX.cityPreview` |
+| `assets/city/hwc-city.js`, `city-architecture.js`, `city-plan.js`, `city-props.js` | The City (ES modules, three.js): districts, buildings, file blocks, props, tours, walk mode, the line car. Colours only through the palette handler from `hwc-ui.js`. Never touches the token. | |
+| `assets/mascot/` | The bot's animation engine (HelloWorld's own; needs `window.gsap`). Read its `README.md` and `AGENTS.md` before using it. | |
+| `assets/brand/`, `assets/fonts/`, `assets/bot.svg` | Bot marks and silhouette, app icons, Plus Jakarta Sans, the favicon. | |
+| `dashboard/index.html`, `assets/dashboard-page.js` | The one-screen dashboard (`HWHero` in full mode) with Live, Demo (`?demo`) and Big demo (`?big`) data. | |
+| `callback.html`, `assets/callback.js` | The sign-in popup's landing page. | |
+| `auth/` | The sign-in worker (Cloudflare). Deploy only with `hw-gh deploy auth`. | |
+| `assets/vendor/` | Pinned libraries, each checked against a second CDN: marked 12.0.2, DOMPurify 3.1.6, highlight.js 11.9.0, GSAP 3.12.5, three.js r169 with six add-ons (`vendor/three/README.md` records the one changed import line and the hashes). Replace a library as a whole, never edit it. | |
+| `hub/` | This repo's own card, pictures and `shots.json`. | |
 
-Cache-busting: the assets load with `?v=N`. Bump N in `index.html` (and `dashboard/index.html`,
-the `import('./world.js?v=N')` in `hub.js`, and the `world.css?v=N` that `world.js` loads itself)
-whenever a file changes, or Pages may serve old copies.
-
-The World (`assets/world.js`, `assets/world.css`, `hww-` classes) draws a dotted planet with one
-region per category and one building per project: shape from the kind, height from code size; a
-green beacon for a demo, a mast with a ring for a live site, a crane for in progress, grey for
-paused or retired, small moons for changes in the last 30 days, a violet lock for private. The
-side list is the accessible way in. Zoom needs Ctrl or Cmd with the wheel (or a pinch), so the
-page still scrolls. three.js is vendored (`assets/vendor/three/README.md`: one import line changed).
+Script order in `index.html`: `theme-boot.js`, `hub-config.js`, `gh.js`, marked, DOMPurify,
+highlight.js, GSAP, `hwx-vocab.js`, `hwx-data.js`, `hub-shell.js`, `hero.js`, `hwx-views.js`,
+`hwc-ui.js`. Cache-busting: every asset loads with `?v=N`; bump it on every change, and bump
+`CITY_URL` in `hwc-ui.js` and the City files' own `?v=` imports when the City changes.
 
 ## Routes
 
-`#/` Discover (shelves: changed recently, demos, live, one per category) · `#/all?cat=&kind=&status=&lang=&demo=1&live=1&private=1&q=&sort=recent|name|size`
-· `#/categories` · `#/world` · `#/health` (signed in) · `#/p/<repo>?tab=overview|built|code`
-· `#/p/<repo>?launch=demo` opens the demo over the project page. The detail level (Overview, How
-it's built, Code) is kept in `localStorage['hw_level']`.
+`#/` Discover · `#/city` (`?in=<repo>` looks inside one project) · `#/map` · `#/cat/<id>` ·
+`#/line` (Idea to live) · `#/connections` · `#/live`, `#/live/<host>` · `#/new` (what's new) ·
+`#/all?cat=&kind=&status=&lang=&aud=&q=&sort=` · `#/with/<tool>` · `#/glossary` · `#/health`
+(signed in) · `#/p/<repo>?tab=overview|built|code` · `#/p/<repo>?launch=demo` (asks first).
+Old addresses redirect: `#/world`, `#/categories`, `#/journey`, `#/sites`. The detail level
+(Overview, How it's built, Code) is `localStorage['hw_level']` and fires `hwx:level`.
 
-## Where a project's details come from (`HWGH.info`)
+## Where a project's details come from
 
-First match wins: the hub card `hub/project.json` (standard: `../templates/hub/README.md`; a card
-with `{{` placeholders is ignored) → the README (H1 = name, first paragraph = summary) → the
-`cat-*` topic → the repo description → the repo name. Forks and archived repos are left out of
-every list; a card with `same_as` hides a second copy of a project.
+The hub card `hub/project.json` (standard: `../templates/hub/README.md`; a card with `{{`
+placeholders is ignored; every field is checked by `HWGH.cleanCard`) → the README (H1 and first
+paragraph) → the `cat-*` topic → the description → the repo name. Forks and archived repos are left
+out of every list; `same_as` hides a second copy. A project without pictures gets a generated cover.
 
 ## Sign-in and security
 
-- **Sign in with GitHub** (`HWGH.signInWithGitHub`, shown only when `hub.auth.client_id` and
-  `hub.auth.exchange_url` are set in the config): the "HelloWorld Hub" GitHub App (contents and
-  metadata read-only, 8-hour tokens). A popup opens on the click (before anything is awaited, so
-  browsers allow it) at `github.com/login/oauth/authorize` with `state` and a PKCE challenge; it
-  lands on `callback.html` (+ `assets/callback.js`), which posts the code to its opener on this
-  origin only and closes. The page checks the message's source, origin and state, then the
-  sign-in worker (`auth/worker.js`: `/exchange`, `/revoke`; CORS for this origin only; the client
-  secret never leaves it; the refresh token is dropped) returns the token. Sign out calls
-  `/revoke`. The worker's address must also be in the page's `connect-src`: `hw-gh auth-config`
-  adds it. Deploy only with `hw-gh deploy auth` (see `../CLAUDE.md`).
-- **The token route stays as a fallback:** a pasted read-only fine-grained token. The dialog links
-  to GitHub's token page with the name, 90-day expiry and read-only contents filled in. A classic
-  or gh token is accepted with a warning.
-- Either way the token is checked with `/user`, kept in `sessionStorage['hw_gh_token']` (this tab
-  only, gone when it closes) and sent only to `api.github.com`.
-- **Signed in**, repos come from `/user/repos?affiliation=owner,collaborator` (owner `HelloWorldIE`)
-  and details from GraphQL, ten repos a query, six at once. **Signed out**, from
-  `/users/HelloWorldIE/repos` and `raw.githubusercontent.com` (GitHub allows 60 API requests an
-  hour per address; the page says so when the limit is hit).
-- **Content-Security-Policy** (meta): scripts from this site only, plus inline (needed by demos,
-  see below); connections only to `api.github.com` and `raw.githubusercontent.com`; no plugins,
-  no forms. Pages cannot send headers, so there is no `frame-ancestors`: `theme-boot.js` hides the
-  page when it is framed instead.
-- **Demos run sealed:** a `srcdoc` iframe with `sandbox="allow-scripts allow-popups allow-modals
-  allow-downloads allow-pointer-lock"` and **never `allow-same-origin`**, so a demo cannot reach this
-  page, its storage or the token. A stricter policy is put first in the demo (no network, no
-  forms, data and blob pictures only) and an in-memory `localStorage` stands in. Never add
-  `allow-same-origin`.
-- **README and Markdown** go through marked, then DOMPurify (no style, forms, frames or media),
-  then links are made safe (external in a new tab, relative to GitHub) and relative pictures load
-  through the viewer's access. Everything else from GitHub is escaped (`esc()`) before it reaches
-  `innerHTML`.
-- **Card paths are checked** (`HWGH.safePath`): relative, inside the repo, no `..`, no scheme.
-- **The origin is shared** with every other Pages site of `HelloWorldIE`. See rule 3 in `../CLAUDE.md`.
+- **Sign in with GitHub** through the "HelloWorld Hub" GitHub App (read-only, 8-hour tokens,
+  PKCE, popup to `callback.html`, the `auth/` worker swaps the code), shown only once
+  `hub.auth.client_id` and `exchange_url` are set; the **read-only fine-grained token** route stays
+  as a fallback. The token lives in `sessionStorage['hw_gh_token']` and goes only to
+  `api.github.com`; Sign out also revokes it.
+- **CSP** (meta in `index.html`): scripts from this site (plus inline, for demos), connections only
+  to `api.github.com`, `raw.githubusercontent.com` and the sign-in worker once configured.
+- **Demos never run as the hub:** a `srcdoc` frame, `sandbox` without `allow-same-origin` (never add
+  it), the strict demo policy first in the page (no network, no forms), in-memory storage, a
+  warning bar. A link (`?launch=demo`) never runs a demo by itself: the confirm screen says who
+  last changed it. The City never runs a demo; its preview shows a picture only.
+- **The City module never sees the token** or page globals: `hwc-ui.js` hands it fetchers.
+- Everything from GitHub is escaped (`HWShell.esc`) or sanitised (marked then DOMPurify) before it
+  reaches `innerHTML`; card paths go through `HWGH.safePath`; maps keyed by card values are
+  `Object.create(null)`.
+- Signed out, GitHub allows 60 API requests an hour: the City loads no file trees then, except for
+  Look inside.
 
-## Previewing
+## Previewing and pictures
 
-- **With real data, signed in:** `hw-gh preview` (from anywhere), then http://127.0.0.1:8765/. A
-  read-only local proxy adds the token; the page shows "(local preview)" beside the account.
-- **As a signed-out visitor:** `python3 -m http.server 8766 --bind 127.0.0.1` in this folder.
-- Headless Chrome screenshots work for both; a WebGL flag is needed for the World.
+- **Real data, signed in:** `hw-gh preview` (a read-only proxy on http://127.0.0.1:8765/).
+- **Signed out:** `python3 -m http.server 8766 --bind 127.0.0.1` in this folder.
+- **The hub's own pictures:** `hw-gh shots .` from `hub/shots.json` (the dashboard with demo data,
+  so nothing private is in them).
+- Check light and dark, 1440 and 390 px, reduced motion, and WebGL off for the City, before
+  publishing. Headless Chrome needs SwiftShader flags for WebGL and enforces a 500 px minimum
+  window, so use device emulation for phones.
 
 ## Deploying
 
-Commit to `main` and push: Pages serves `main` from the root, no build step. Commits use the
-HelloWorld identity automatically. Check first with both previews, light and dark, at 1440 and
-390 px wide.
+`hw-gh gate`, then commit to `main` and push: Pages serves `main` from the root, no build step.
 
 ## Gotchas
 
-- `.btn` sets `display`, so `brand.css` has `[hidden] { display: none !important; }`. Keep it, or
-  hidden buttons show.
-- `hub.js` defines `own()` before everything else and the first `render()` runs at the end of the
-  file. Code that renders during start-up runs before the views exist.
-- Horizontal shelves use `overflow-y: hidden`, or the mouse wheel stops scrolling the page.
+- `html, body` use `overflow-x: clip`, never `hidden`, or the sticky header and explorer bar stop
+  sticking.
+- In full screen, `hwc.css` lifts `#hwx-view` (`z-index: 400`) because the view is its own
+  stacking context: keep that id.
+- Horizontal scrollers need `overflow-y: hidden`, or the mouse wheel stops scrolling the page.
+- The header bot and the shell's loader take turns, so one bot talks at a time.
+- three.js logs an error when a headless browser refuses pointer lock (walk mode); it is caught and
+  the keys still work.

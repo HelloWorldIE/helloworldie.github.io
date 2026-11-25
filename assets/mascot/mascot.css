@@ -1,0 +1,26 @@
+/* ───────────────────────────────────────────────────────────────────────────
+   Mascot styles — scoped under .mascot. The mount sizes the mascot
+   (it fills its container); fonts/colours come from CSS vars the engine sets
+   per-character. Bring your own brand font on the host page.
+   ─────────────────────────────────────────────────────────────────────────── */
+.mascot{
+  position:relative;
+  width:100%;
+  aspect-ratio:1/1;
+  font-family:inherit;
+  --m-eye:#6d44e0;
+  --m-type:#6d44e0;
+  --m-accent:#6d44e0;
+  --m-origin:50% 56%;
+}
+.mascot .m-bot{position:absolute;inset:0;transform-origin:var(--m-origin)}
+.mascot .m-grp{position:absolute;inset:0}
+.mascot .m-head{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:var(--m-head-w,min(88%,380px))}
+.mascot .m-head svg{display:block;width:100%;height:auto}
+.mascot .m-screen{position:absolute;overflow:hidden;display:flex;align-items:center;justify-content:flex-start;z-index:2}
+.mascot .m-line{display:inline-flex;align-items:center;white-space:nowrap;font-weight:800;letter-spacing:-.03em;line-height:1;will-change:transform;color:var(--m-type)}
+.mascot .m-line .m-accent{color:var(--m-accent)}
+.mascot .m-bar{display:inline-block;width:.36em;height:.96em;background:var(--m-eye);border-radius:2px;margin-left:.03em;opacity:0;flex-shrink:0}
+.mascot .m-eye{position:absolute;background:var(--m-eye);border-radius:999px;z-index:3;transform-origin:center;will-change:transform}
+.mascot .m-eye.m-cursorblink{animation:m-cursorblink 1s steps(1) infinite}
+@keyframes m-cursorblink{0%,50%{opacity:1}50.01%,100%{opacity:0}}
