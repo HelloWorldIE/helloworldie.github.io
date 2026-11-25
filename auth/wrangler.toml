@@ -1,0 +1,12 @@
+# HelloWorld Hub sign-in worker. Deploy only with `hw-gh deploy auth`, which uses HelloWorld's own
+# Cloudflare account (its API token in ~/.config/helloworld/cloudflare-token), never the wrangler
+# login on this Mac. The client secret is set with `hw-gh worker-secret`, never written here.
+name = "helloworld-hub-auth"
+main = "worker.js"
+compatibility_date = "2025-06-01"
+workers_dev = true
+
+[vars]
+GITHUB_CLIENT_ID = "__SET_BY_HW_GH__"
+ALLOWED_ORIGIN = "https://helloworldie.github.io"
+REDIRECT_URI = "https://helloworldie.github.io/callback.html"

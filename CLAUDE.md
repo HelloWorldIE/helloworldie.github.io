@@ -60,11 +60,21 @@ every list; a card with `same_as` hides a second copy of a project.
 
 ## Sign-in and security
 
-- **Sign-in is a pasted read-only fine-grained token**, checked with `/user`, kept in
-  `sessionStorage['hw_gh_token']` (this tab only, gone when it closes), sent only to
-  `api.github.com`. The dialog links to GitHub's token page with the name, 90-day expiry and
-  read-only contents already filled in. A classic or gh token is accepted with a warning. Why not
-  OAuth: see `../CLAUDE.md`.
+- **Sign in with GitHub** (`HWGH.signInWithGitHub`, shown only when `hub.auth.client_id` and
+  `hub.auth.exchange_url` are set in the config): the "HelloWorld Hub" GitHub App (contents and
+  metadata read-only, 8-hour tokens). A popup opens on the click (before anything is awaited, so
+  browsers allow it) at `github.com/login/oauth/authorize` with `state` and a PKCE challenge; it
+  lands on `callback.html` (+ `assets/callback.js`), which posts the code to its opener on this
+  origin only and closes. The page checks the message's source, origin and state, then the
+  sign-in worker (`auth/worker.js`: `/exchange`, `/revoke`; CORS for this origin only; the client
+  secret never leaves it; the refresh token is dropped) returns the token. Sign out calls
+  `/revoke`. The worker's address must also be in the page's `connect-src`: `hw-gh auth-config`
+  adds it. Deploy only with `hw-gh deploy auth` (see `../CLAUDE.md`).
+- **The token route stays as a fallback:** a pasted read-only fine-grained token. The dialog links
+  to GitHub's token page with the name, 90-day expiry and read-only contents filled in. A classic
+  or gh token is accepted with a warning.
+- Either way the token is checked with `/user`, kept in `sessionStorage['hw_gh_token']` (this tab
+  only, gone when it closes) and sent only to `api.github.com`.
 - **Signed in**, repos come from `/user/repos?affiliation=owner,collaborator` (owner `HelloWorldIE`)
   and details from GraphQL, ten repos a query, six at once. **Signed out**, from
   `/users/HelloWorldIE/repos` and `raw.githubusercontent.com` (GitHub allows 60 API requests an

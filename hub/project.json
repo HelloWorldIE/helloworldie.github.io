@@ -17,5 +17,9 @@
   "built_with": ["Vanilla JS", "three.js", "GitHub REST and GraphQL APIs", "GitHub Pages"],
   "live_url": "https://helloworldie.github.io/",
   "no_demo": "The hub is itself live at its own address.",
+  "cover": "hub/cover.jpg",
+  "gallery": [
+    { "src": "hub/gallery/01-dashboard-light.jpg", "caption": "The single-screen dashboard with demo data, in light mode" }
+  ],
   "updated": "2026-11-26"
 }

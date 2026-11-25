@@ -108,24 +108,89 @@
     return state;
   }
 
-  // Accepts a pasted token, checks it with GitHub, then keeps it for this tab only.
-  async function signIn(raw) {
-    var t = String(raw || '').trim();
-    if (!/^(github_pat_[A-Za-z0-9_]{20,255}|gh[opsu]_[A-Za-z0-9]{30,255})$/.test(t)) {
-      throw new Error('That does not look like a GitHub token. A fine-grained token starts with github_pat_.');
-    }
+  // Checks a token with GitHub, then keeps it for this tab only.
+  async function adoptToken(t, method) {
     var res = await fetch(GH_API + '/user', { headers: { 'Accept': 'application/vnd.github+json', 'Authorization': 'Bearer ' + t } });
     if (res.status === 401) throw new Error('GitHub did not accept that token. Check it has not expired.');
     if (!res.ok) throw new Error('GitHub answered ' + res.status + '. Try again in a minute.');
     var me = await res.json();
     token = t;
-    try { sessionStorage.setItem(TOKEN_KEY, t); } catch (e) {}
+    try { sessionStorage.setItem(TOKEN_KEY, t); sessionStorage.setItem(METHOD_KEY, method); } catch (e) {}
     state.signedIn = true; state.login = me.login; state.avatar = me.avatar_url;
     emit('auth', state);
-    return { login: me.login, broad: /^gh[opsu]_/.test(t), scopes: res.headers.get('x-oauth-scopes') };
+    return { login: me.login, broad: /^gh[op]_/.test(t), method: method };
   }
 
-  function signOut() { clearToken(); emit('auth', state); }
+  // A pasted token (a read-only fine-grained token is the safe kind).
+  async function signIn(raw) {
+    var t = String(raw || '').trim();
+    if (!/^(github_pat_[A-Za-z0-9_]{20,255}|gh[opsu]_[A-Za-z0-9]{30,255})$/.test(t)) {
+      throw new Error('That does not look like a GitHub token. A fine-grained token starts with github_pat_.');
+    }
+    return adoptToken(t, 'token');
+  }
+
+  /* Sign in with GitHub: the HelloWorld Hub GitHub App (contents read-only), PKCE, a popup that
+     lands on callback.html, and the auth worker, which holds the app's secret, swaps the code for
+     a token. Call it straight from a click: the popup must open before anything is awaited. */
+  var AUTH = (CFG.hub && CFG.hub.auth) || {};
+  var AUTH_READY = !!(AUTH.client_id && typeof AUTH.exchange_url === 'string' && /^https:\/\/[a-z0-9.-]+\/?$/i.test(AUTH.exchange_url));
+  var METHOD_KEY = 'hw_gh_method';
+  var CALLBACK = (CFG.hub && CFG.hub.url ? CFG.hub.url.replace(/\/?$/, '/') : location.origin + '/') + 'callback.html';
+  function b64url(buf) {
+    var s = '', b = new Uint8Array(buf);
+    for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function randomString(n) { var a = new Uint8Array(n); crypto.getRandomValues(a); return b64url(a); }
+
+  function signInWithGitHub() {
+    if (!AUTH_READY) return Promise.reject(new Error('Sign in with GitHub is not set up yet. Use a token instead.'));
+    var popup = window.open('about:blank', 'hw-signin', 'popup,width=520,height=720');
+    if (!popup) return Promise.reject(new Error('The browser blocked the sign-in window. Allow pop-ups for this site, then try again.'));
+    var stateValue = randomString(24), verifier = randomString(48);
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)).then(function (digest) {
+      popup.location = 'https://github.com/login/oauth/authorize?' + new URLSearchParams({
+        client_id: AUTH.client_id, redirect_uri: CALLBACK, state: stateValue,
+        code_challenge: b64url(digest), code_challenge_method: 'S256'
+      }).toString();
+      return new Promise(function (resolve, reject) {
+        var timer = setInterval(function () { if (popup.closed) { done(); reject(new Error('The sign-in window was closed before signing in.')); } }, 600);
+        function done() { clearInterval(timer); window.removeEventListener('message', onMessage); }
+        function onMessage(e) {
+          if (e.source !== popup || e.origin !== location.origin) return;
+          var m = e.data || {};
+          if (m.type !== 'hw-auth') return;
+          done();
+          try { popup.close(); } catch (x) {}
+          if (m.error) return reject(new Error(m.error === 'access_denied' ? 'Sign-in was cancelled.' : 'GitHub refused the sign-in (' + m.error + ').'));
+          if (m.state !== stateValue || !m.code) return reject(new Error('The sign-in answer did not match. Try again.'));
+          resolve(m.code);
+        }
+        window.addEventListener('message', onMessage);
+      });
+    }).then(function (code) {
+      return fetch(AUTH.exchange_url.replace(/\/$/, '') + '/exchange', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: code, code_verifier: verifier })
+      });
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (j) {
+        if (!res.ok || !j.access_token) throw new Error('The sign-in could not be finished (' + (j.error || res.status) + ').');
+        return adoptToken(j.access_token, 'app');
+      });
+    }, function (e) { try { popup.close(); } catch (x) {} throw e; });
+  }
+
+  function signOut() {
+    var method = null;
+    try { method = sessionStorage.getItem(METHOD_KEY); sessionStorage.removeItem(METHOD_KEY); } catch (e) {}
+    if (method === 'app' && token && AUTH_READY) {
+      // Ends the token at GitHub too, not only in this tab.
+      fetch(AUTH.exchange_url.replace(/\/$/, '') + '/revoke', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: token }) }).catch(function () {});
+    }
+    clearToken(); emit('auth', state);
+  }
 
   /* ---------- repos ---------- */
   function slim(r) {
@@ -448,6 +513,7 @@
     get progress() { return progress; },
     get hasToken() { return !!token || PREVIEW; },
     loadRepos: loadRepos, signIn: signIn, signOut: signOut,
+    signInWithGitHub: signInWithGitHub, authReady: AUTH_READY,
     projects: projects, info: info, findRepo: findRepo,
     cleanCard: cleanCard, safePath: safePath, httpsUrl: httpsUrl,
     fileText: fileText, fileBlob: fileBlob, image: image, tree: tree,

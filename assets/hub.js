@@ -711,7 +711,26 @@
     name: 'HelloWorld Hub', description: 'Read-only sign-in for ' + (CFG.hub && CFG.hub.url || 'the hub'),
     target_name: ACCOUNT, expires_in: '90', contents: 'read', metadata: 'read'
   }).toString();
-  function openSignIn() { tokenErr.textContent = ''; tokenInput.value = ''; dlg.showModal(); tokenInput.focus(); }
+  // With the GitHub App set up, "Sign in with GitHub" leads and the token route folds away.
+  if (GH.authReady) {
+    $('#app-signin').hidden = false;
+    $('#token-summary').hidden = false;
+    $('#token-way').open = false;
+  }
+  $('#gh-signin').addEventListener('click', function () {
+    var btn = this, err = $('#gh-err');
+    err.textContent = ''; btn.disabled = true;
+    GH.signInWithGitHub().then(function (res) {
+      dlg.close();
+      toast('Signed in as ' + res.login);
+      GH.loadRepos();
+    }, function (e) { err.textContent = e.message; }).finally(function () { btn.disabled = false; });
+  });
+  function openSignIn() {
+    tokenErr.textContent = ''; tokenInput.value = ''; $('#gh-err').textContent = '';
+    dlg.showModal();
+    (GH.authReady ? $('#gh-signin') : tokenInput).focus();
+  }
   $('#signin-form').addEventListener('submit', function (e) {
     if (e.submitter && e.submitter.value === 'cancel') return;
     e.preventDefault();
@@ -726,7 +745,7 @@
     }, function (err) { tokenErr.textContent = err.message; }).finally(function () { $('#token-go').disabled = false; });
   });
   $('#signin-btn').addEventListener('click', openSignIn);
-  $('#signout-btn').addEventListener('click', function () { GH.signOut(); toast('Signed out. The token is gone from this tab.'); GH.loadRepos(); });
+  $('#signout-btn').addEventListener('click', function () { GH.signOut(); toast('Signed out. The sign-in is gone from this tab.'); GH.loadRepos(); });
 
   function syncAuth() {
     var s = GH.state, who = $('#who');
