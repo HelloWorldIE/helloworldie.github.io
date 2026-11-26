@@ -6,9 +6,9 @@ window.HW_CONFIG = {
     "url": "https://helloworldie.github.io/",
     "note": "The repository hub, a public GitHub Pages site. It holds no project data: everything is read at run time from the repos the viewer can see.",
     "auth": {
-      "github_app": "HelloWorld Hub",
-      "client_id": null,
-      "exchange_url": null,
+      "github_app": "HelloWorldIE Hub",
+      "client_id": "Iv23liOHkqm6sZhxNJH6",
+      "exchange_url": "https://helloworld-hub-auth.helloworldie.workers.dev",
       "note": "Sign in with GitHub: a GitHub App (Contents and Metadata read-only, expiring user tokens) and the Cloudflare Worker in helloworldie.github.io/auth/ that holds its client secret. client_id and exchange_url are public. Until both are set the hub offers token sign-in only."
     }
   },

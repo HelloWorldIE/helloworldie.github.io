@@ -77,7 +77,7 @@ out of every list; `same_as` hides a second copy. A project without pictures get
 
 ## Sign-in and security
 
-- **Sign in with GitHub** through the "HelloWorld Hub" GitHub App (read-only, 8-hour tokens,
+- **Sign in with GitHub** through the "HelloWorldIE Hub" GitHub App (read-only, 8-hour tokens,
   PKCE, popup to `callback.html`, the `auth/` worker swaps the code), shown only once
   `hub.auth.client_id` and `exchange_url` are set; the **read-only fine-grained token** route stays
   as a fallback. Tokens go only to `api.github.com`.
