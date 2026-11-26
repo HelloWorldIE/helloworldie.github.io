@@ -1100,10 +1100,16 @@
     var g = i.guides[gi], steps = (g && g.steps) || [], step = steps[si] || {};
     box.setAttribute('data-gi', gi); box.setAttribute('data-si', si);
     var pick = i.guides.length > 1 ? '<div class="hwx-seg hwx-guide-pick" role="radiogroup" aria-label="Guide">' + i.guides.map(function (x, k) { return '<button type="button" role="radio" aria-checked="' + (k === gi) + '" tabindex="' + (k === gi ? 0 : -1) + '" data-gpick="' + k + '">' + esc(x.title || 'Guide ' + (k + 1)) + '</button>'; }).join('') + '</div>' : '';
-    box.innerHTML = pick + '<div class="hwx-guide"><div><div class="hw-shot">' + (step.image ? '<img alt="' + esc(SH.stepAlt(step, si)) + '" data-img="' + esc(i.repo.name + '|' + step.image) + '">' + SH.marksHTML(step.marks, si) : '<div class="hw-shot-none"><p>' + SH.boldOnly(step.text || '') + '</p></div>') + '</div>' +
+    /* A stage of one fixed size (Bryan: "a fixed responsive gallery"): every step's picture fits
+       inside it, centred, never larger than its own pixels, and Back and Next never move. */
+    var spec = step.image ? i.repo.name + '|' + step.image : '';
+    box.innerHTML = pick + '<div class="hwx-guide"><div class="hwx-guide-main"><div class="hwx-stage">' + (step.image ? '<div class="hw-shot"' + SH.shotStyle(spec) + '><img alt="' + esc(SH.stepAlt(step, si)) + '" data-img="' + esc(spec) + '">' + SH.marksHTML(step.marks, si) + '</div>' : '<div class="hw-shot-none"><p>' + SH.boldOnly(step.text || '') + '</p></div>') + '</div>' +
       '<div class="hwx-guide-nav"><button type="button" class="btn btn-quiet btn-sm" data-gstep="' + (si - 1) + '"' + (si <= 0 ? ' disabled' : '') + '>' + I('left') + 'Back</button><span aria-live="polite">Step ' + (si + 1) + ' of ' + steps.length + '</span><button type="button" class="btn btn-primary btn-sm" data-gstep="' + (si + 1) + '"' + (si >= steps.length - 1 ? ' disabled' : '') + '>Next' + I('right') + '</button></div></div>' +
-      '<ol class="hwx-steps" aria-label="Steps">' + (g && g.title ? '' : '') + steps.map(function (s, k) { return '<li><button type="button" class="hwx-step" data-gstep="' + k + '"' + (k === si ? ' aria-current="step"' : '') + '><b>' + (k + 1) + '</b><span>' + SH.boldOnly(s.text || '') + '</span></button></li>'; }).join('') + '</ol></div>';
+      '<div class="hwx-steps-wrap"><ol class="hwx-steps" aria-label="Steps">' + steps.map(function (s, k) { return '<li><button type="button" class="hwx-step" data-gstep="' + k + '"' + (k === si ? ' aria-current="step"' : '') + '><b>' + (k + 1) + '</b><span>' + SH.boldOnly(s.text || '') + '</span></button></li>'; }).join('') + '</ol></div></div>';
     SH.watchImages(box);
+    [si + 1, si - 1].forEach(function (k) { var n = steps[k]; if (n && n.image && SH.preloadShot) SH.preloadShot(i.repo.name, n.image); });
+    var curStep = box.querySelector('.hwx-step[aria-current="step"]');
+    if (curStep && curStep.scrollIntoView) { var list = box.querySelector('.hwx-steps'); if (list && list.scrollHeight > list.clientHeight) { var top = curStep.offsetTop - list.offsetTop; if (top < list.scrollTop || top + curStep.offsetHeight > list.scrollTop + list.clientHeight) list.scrollTop = Math.max(0, top - 8); } }
     box.onclick = function (e) {
       var b = e.target.closest('[data-gstep],[data-gpick]'); if (!b || b.disabled) return;
       if (b.hasAttribute('data-gpick')) guideViewer(i, +b.getAttribute('data-gpick'), 0);

@@ -294,6 +294,15 @@
     entries.forEach(function (e) { if (e.isIntersecting) { io.unobserve(e.target); loadImg(e.target); } });
   }, { rootMargin: '300px' }) : null;
   function watchImages(root) { $$('img[data-img]', root || document).forEach(function (img) { if (io) io.observe(img); else loadImg(img); }); }
+  /* Each step picture's shape and real width, so a stage can size its frame before the picture
+     arrives (no jump between steps) and never enlarge a small picture past its own pixels. */
+  var shotDims = Object.create(null);
+  function noteShot(spec, im) { if (im.naturalWidth && im.naturalHeight) shotDims[spec] = { ar: im.naturalWidth / im.naturalHeight, nw: im.naturalWidth }; }
+  function shotStyle(spec) { var d = shotDims[spec]; return d ? ' style="--ar:' + d.ar.toFixed(4) + ';--nw:' + d.nw + 'px"' : ''; }
+  function preloadShot(repoName, path) {
+    var spec = repoName + '|' + path; if (shotDims[spec]) return;
+    image(repoName, path).then(function (url) { var im = new Image(); im.onload = function () { noteShot(spec, im); }; im.src = url; }, function () {});
+  }
   function loadImg(img) {
     var spec = img.getAttribute('data-img'); if (!spec) return;
     var i = spec.indexOf('|');
@@ -302,7 +311,8 @@
       img.addEventListener('load', function () {
         img.classList.add('is-on');
         var f = img.parentNode;
-        if (f && f.classList && f.classList.contains('hw-shot') && img.naturalWidth && img.naturalHeight) f.style.setProperty('--ar', (img.naturalWidth / img.naturalHeight).toFixed(4));
+        noteShot(spec, img);
+        if (f && f.classList && f.classList.contains('hw-shot') && img.naturalWidth && img.naturalHeight) { f.style.setProperty('--ar', (img.naturalWidth / img.naturalHeight).toFixed(4)); f.style.setProperty('--nw', img.naturalWidth + 'px'); }
       }, { once: true });
       img.src = url;
     }, function () { img.remove(); });
@@ -630,11 +640,12 @@
         '<div class="hw-guide-full"><ol class="hw-guide-steps">' + g.steps.map(function (st, k) {
           return '<li><button type="button" data-goto="' + k + '"' + (k === si ? ' aria-current="step"' : '') + '><span class="n">' + (k + 1) + '</span><span>' + boldOnly(st.text) + '</span></button></li>';
         }).join('') + '</ol><div class="hw-guide-pic">' +
-        (s.image ? '<div class="hw-shot"><img alt="' + esc(stepAlt(s, si)) + '" data-img="' + esc(r.name + '|' + s.image) + '">' + marksHTML(s.marks, si) + '</div>' : '<p class="hw-guide-text">' + boldOnly(s.text) + '</p>') +
+        (s.image ? '<div class="hw-shot"' + shotStyle(r.name + '|' + s.image) + '><img alt="' + esc(stepAlt(s, si)) + '" data-img="' + esc(r.name + '|' + s.image) + '">' + marksHTML(s.marks, si) + '</div>' : '<p class="hw-guide-text">' + boldOnly(s.text) + '</p>') +
         '</div></div>';
       if (first) openFull(html, g.title);
       else { full.innerHTML = html; var cur = $('[aria-current="step"]', full); if (cur) cur.focus(); }
       watchImages(full);
+      [si + 1, si - 1].forEach(function (k) { var n = g.steps[k]; if (n && n.image) preloadShot(r.name, n.image); });
       announce('Step ' + (si + 1) + ' of ' + g.steps.length + ': ' + String(s.text || '').replace(/\*\*/g, ''));
     }
     draw(si || 0, true);
@@ -835,7 +846,7 @@
     announce: announce, toast: toast, copy: copy,
     makeBot: makeBot, loader: loader, fullLoader: fullLoader, headerBot: function () { return headerBot; },
     openSignIn: openSignIn, syncAuth: syncAuth,
-    openFull: openFull, closeFull: closeFull, openDemo: openDemo, openLightbox: openLightbox, openGuide: openGuide,
+    openFull: openFull, closeFull: closeFull, openDemo: openDemo, openLightbox: openLightbox, openGuide: openGuide, shotStyle: shotStyle, preloadShot: preloadShot,
     marksHTML: marksHTML, stepAlt: stepAlt,
     renderMarkdown: renderMarkdown, renderReadme: renderReadme, mountCode: mountCode,
     image: image, watchImages: watchImages, observeReveals: observeReveals, curtain: curtain
