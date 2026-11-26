@@ -21,8 +21,9 @@
      a play sign      a demo: point at the building and a preview of its picture rises
      flags            tools it is built with that other projects use too
      a crane          work in progress;  ruins: a retired project; grey and lower: paused
-     the bot's trail  the HelloWorld line: the bot flies from district to district, idea to live,
-                      in the order of the stages, leaving a light trail that fades behind him
+     the bot's trail  the HelloWorld line: the bot swims from district to district, idea to live,
+                      in the order of the stages, in jellyfish strokes, leaving a light trail that
+                      fades behind him
      small islands    the live sites, one per address, with a beacon; a ferry for every project
                       that runs there
      people           changes made in the last 30 days, round their block
@@ -260,7 +261,7 @@ export class City {
   constructor(host, handlers = {}) {
     this.host = host;
     this.h = Object.assign({
-      palette() { return {}; },
+      palette() { return {}; }, botSize() { return 48; },
       onSelect() {}, onLevel() {}, onWalk() {}, onOpen() {}, onOpenSite() {}, onTour() {}, onAnchor() {},
       fetchBlob() { return Promise.resolve(null); }, loadImage() { return Promise.resolve(null); }, preview() { return Promise.resolve(null); }
     }, handlers);
@@ -1047,7 +1048,8 @@ export class City {
     const car = new THREE.Object3D();
     this.props.add(car);
     this._buildTrail();
-    this.cable = { curve, stopU, car, i: 0, dir: 1, t0: performance.now(), phase: 'wait', u: stopU[0],
+    this.cable = { curve, stopU, car, i: 0, dir: 1, t0: performance.now(), phase: 'wait', u: stopU[0], length: curve.getLength(),
+      stroke: 0, strokeAt: -1, strokeDir: [0, 0], strokeMs: 0,
       names: stops.map((d) => d.label), stages: stops.map((d) => d.hood.stageLabel || ''), counts: stops.map((d) => d.count) };
     this._stepLine(performance.now());
   }
@@ -1080,12 +1082,19 @@ export class City {
     if (!leg || REDUCED.matches || this.walking) return hide();
     const from = Math.max(leg.t0, now - tr.ms), to = Math.min(leg.t0 + leg.ms, now);
     if (to - from < 30) return hide();
-    const n = tr.MAX, ease = (k) => 0.5 - 0.5 * Math.cos(clamp(k, 0, 1) * Math.PI);
-    const pts = [];
+    const n = tr.MAX, pts = [];
+    /* He is drawn over the canvas, and his face has see-through parts, so the trail must start behind
+       him, not under him: it begins just outside his outline (measured on screen) and fades in from
+       there. */
+    const W = this._w || 1, H = this._h || 1, R = Math.max(12, (this.h.botSize ? this.h.botSize() : 48) / 2);
+    const scr = (v) => { const q = v.clone().project(this.camera); return [(q.x + 1) / 2 * W, (1 - q.y) / 2 * H]; };
+    const at = scr(c.car.position);
     for (let j = 0; j < n; j++) {
       const tau = from + (to - from) * (j / (n - 1));
-      const u = clamp(leg.a + (leg.b - leg.a) * ease((tau - leg.t0) / leg.ms), 0, 1);
-      pts.push({ p: c.curve.getPointAt(u), life: 1 - (now - tau) / tr.ms });
+      const p = c.curve.getPointAt(clamp(this._legU(leg, tau), 0, 1)), s = scr(p);
+      const dist = Math.hypot(s[0] - at[0], s[1] - at[1]);
+      const edge = clamp((dist - R * 0.92) / (R * 0.9), 0, 1);           /* 0 under him, 1 clear of him */
+      pts.push({ p, life: 1 - (now - tau) / tr.ms, edge: edge * edge * (3 - 2 * edge) });
     }
     const Pl = this.P, head = Pl.tones.accent, tail = Pl.tones.accentSoft;
     const cam = this.camera.position, side = new THREE.Vector3(), tg = new THREE.Vector3(), view = new THREE.Vector3(), col = new THREE.Color();
@@ -1099,11 +1108,11 @@ export class City {
         view.subVectors(cam, p);
         side.crossVectors(tg, view).normalize();
         const life = Math.max(0, pts[i].life);                             /* 1 where he is now, 0 at the end */
-        const w = width * perPx * view.length() * Math.pow(life, 0.8);
+        const w = width * perPx * view.length() * Math.pow(life, 0.8) * (0.35 + 0.65 * pts[i].edge);
         pos.setXYZ(i * 2, p.x + side.x * w, p.y + side.y * w, p.z + side.z * w);
         pos.setXYZ(i * 2 + 1, p.x - side.x * w, p.y - side.y * w, p.z - side.z * w);
         col.copy(tail).lerp(head, Math.pow(life, 1.4));
-        const A = alpha * Math.pow(life, 1.5);
+        const A = alpha * Math.pow(life, 1.5) * pts[i].edge;
         cl.setXYZW(i * 2, col.r, col.g, col.b, A); cl.setXYZW(i * 2 + 1, col.r, col.g, col.b, A);
       }
       mesh.geometry.setDrawRange(0, (n - 1) * 6);
@@ -1111,21 +1120,64 @@ export class City {
       mesh.visible = true;
     });
   }
+  /* ---- how the bot swims the line ----
+     The way he swims everywhere (assets/mascot/AGENTS.md 3.4 and life.js): pulse and glide, never a
+     constant slide. A leg between two districts is one to four strokes. Each stroke gathers (a small
+     pull back against the travel, sine in, 0.36 s), pushes hard (power3 out, about 2.6 s, carrying a
+     little past its mark) and settles back from that carry (sine in-out, 1.1 s). Only his position
+     moves: no squash or stretch while travelling. Where he is at any moment is worked out from the
+     time alone, so the trail behind him can be drawn from the same sums. */
+  _legPlan(a, b, t0) {
+    const c = this.cable, len = Math.abs(b - a) * c.length;
+    const n = clamp(Math.round(len / 40), 1, 4), strokes = [];
+    let t = t0;
+    for (let k = 0; k < n; k++) {
+      const ua = a + (b - a) * k / n, ub = a + (b - a) * (k + 1) / n;
+      const gather = 360, push = 2600 + (len / n) * 14, settle = 1100;
+      strokes.push({ ua, ub, span: ub - ua, t0: t, gather, push, settle, ms: gather + push + settle });
+      t += gather + push + settle;
+    }
+    return { a, b, t0, strokes, ms: t - t0 };
+  }
+  _legU(leg, tau) {
+    const ss = leg.strokes;
+    let s = ss[ss.length - 1];
+    for (let i = 0; i < ss.length; i++) if (tau < ss[i].t0 + ss[i].ms) { s = ss[i]; break; }
+    const t = tau - s.t0, back = s.span * 0.035, over = s.span * 0.05;
+    if (t <= 0) return s.ua;
+    if (t < s.gather) return s.ua - back * (1 - Math.cos((t / s.gather) * Math.PI / 2));              /* gather */
+    if (t < s.gather + s.push) {                                                                     /* push and carry */
+      const p = (t - s.gather) / s.push;
+      return (s.ua - back) + (s.ub + over - (s.ua - back)) * (1 - Math.pow(1 - p, 3));
+    }
+    if (t < s.ms) return s.ub + over - over * (0.5 - 0.5 * Math.cos(((t - s.gather - s.push) / s.settle) * Math.PI));   /* settle */
+    return s.ub;
+  }
   _stepLine(now) {
     const c = this.cable;
     if (!c) return;
-    const move = 8500, wait = 3200;
+    const wait = 3200;                                  /* longer than the trail, so it fades out at each stop */
     let u = c.stopU[c.i];
     if (!REDUCED.matches) {
       if (c.phase === 'wait' && now - c.t0 > wait) {
         if (c.i + c.dir < 0 || c.i + c.dir >= c.stopU.length) c.dir = -c.dir;
         c.phase = 'move'; c.t0 = now;
-        c.leg = { a: c.stopU[c.i], b: c.stopU[c.i + c.dir], t0: now, ms: move };
+        c.leg = this._legPlan(c.stopU[c.i], c.stopU[c.i + c.dir], now);
       }
-      if (c.phase === 'move') {
-        const k = Math.min(1, (now - c.t0) / move), a = c.stopU[c.i], b = c.stopU[c.i + c.dir];
-        u = a + (b - a) * (0.5 - 0.5 * Math.cos(k * Math.PI));       /* eases out of the stop and into the next */
-        if (k >= 1) { c.i += c.dir; c.phase = 'wait'; c.t0 = now; u = b; }
+      if (c.phase === 'move' && c.leg) {
+        const leg = c.leg;
+        u = this._legU(leg, now);
+        /* a new stroke: tell the page which way it goes on screen, so his eyes lead and he tilts */
+        let si = leg.strokes.length - 1;
+        for (let i = 0; i < leg.strokes.length; i++) if (now < leg.strokes[i].t0 + leg.strokes[i].ms) { si = i; break; }
+        const key = leg.t0 + ':' + si;
+        if (key !== c.strokeAt && now < leg.t0 + leg.ms) {
+          c.strokeAt = key; c.stroke++;
+          const s = leg.strokes[si], A = c.curve.getPointAt(clamp(s.ua, 0, 1)).project(this.camera), B = c.curve.getPointAt(clamp(s.ub, 0, 1)).project(this.camera);
+          const dx = (B.x - A.x) * (this._w || 1), dy = -(B.y - A.y) * (this._h || 1), d = Math.hypot(dx, dy) || 1;
+          c.strokeDir = [dx / d, dy / d]; c.strokeMs = s.ms;
+        }
+        if (now >= leg.t0 + leg.ms) { c.i += c.dir; c.phase = 'wait'; c.t0 = now; u = leg.b; }
       }
     }
     const uu = clamp(u, 0, 1), p = c.curve.getPointAt(uu), tg = c.curve.getTangentAt(uu);
@@ -2340,10 +2392,11 @@ export class City {
     if (kind && this._w) {
       const v = this._av.clone().project(this.camera);
       msg = { kind, x: (v.x + 1) / 2 * this._w, y: (1 - v.y) / 2 * this._h, front: v.z < 1, flying: !!this.flight, ride: !!this.ride };
+      if (kind === 'car' && this.cable) { msg.stroke = this.cable.stroke; msg.sdx = this.cable.strokeDir[0]; msg.sdy = this.cable.strokeDir[1]; msg.sms = this.cable.strokeMs; }
     }
     const a = this._lastAnchor;
     if (!msg && !a) return;
-    if (msg && a && a.kind === msg.kind && Math.abs(a.x - msg.x) < 0.4 && Math.abs(a.y - msg.y) < 0.4 && a.flying === msg.flying && a.ride === msg.ride) return;
+    if (msg && a && a.kind === msg.kind && Math.abs(a.x - msg.x) < 0.4 && Math.abs(a.y - msg.y) < 0.4 && a.flying === msg.flying && a.ride === msg.ride && a.stroke === msg.stroke) return;
     this._lastAnchor = msg;
     this.h.onAnchor(msg);
   }

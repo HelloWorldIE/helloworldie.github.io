@@ -15,8 +15,9 @@
    colour only through palette(). One canvas and one City for the session; it pauses when nobody
    can see it.
 
-   The bot is the real mascot (assets/mascot), drawn over the canvas, one at a time: he flies the
-   HelloWorld line from district to district with a light trail fading behind him, swims to whatever you select with the jellyfish pulse, looks at it, scans
+   The bot is the real mascot (assets/mascot), drawn over the canvas, one at a time: he swims the
+   HelloWorld line from district to district (in strokes: gather, push, settle; his eyes lead each
+   push and he tilts toward it) with a light trail fading behind him, swims to whatever you select with the jellyfish pulse, looks at it, scans
    while you search and is found when something matches. Never a 3D model of him. He is in the
    #/city view only (the header has its own bot on the other views).
    ========================================================================== */
@@ -29,7 +30,7 @@
   var GH = window.HWGH, CFG = window.HW_CONFIG || {};
   if (!GH) return;
   var OWNER = CFG.account || GH.account;
-  var CITY_URL = 'assets/city/hwc-city.js?v=2';
+  var CITY_URL = 'assets/city/hwc-city.js?v=3';
 
   /* ---------------- small helpers ---------------- */
   var own = function (o, k) { return o != null && typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k); };
@@ -257,7 +258,8 @@
   }
 
   /* ---------------- the bot over the City ----------------
-     One mascot for the session. It flies the line (its own route, the light trail is the City's), swims to what you select with the
+     One mascot for the session. It swims the line in strokes (its route and light trail are the City's; each stroke's direction
+     comes with the anchor so his eyes can lead it), swims to what you select with the
      jellyfish pulse (gather, one long push that carries a little past, a soft settle), eyes leading,
      then looks at it. Under reduced motion it is still and every move is a cut. */
   var bot = { wrap: null, m: null, p: null, x: 0, y: 0, placed: false, kind: null, target: null, swim: null, raf: 0, seen: false };
@@ -376,9 +378,20 @@
   }
   /* The City says where its anchor is (every frame it moves). A change of what he is following
      starts a swim; otherwise he stays with it. */
+  function strokeLead(a) {
+    if (!a || a.kind !== 'car' || a.stroke == null || a.stroke === bot.stroke) return;
+    bot.stroke = a.stroke;
+    if (!bot.m || !window.gsap || reduced() || bot.swim) return;
+    var T = Math.max(1.5, (a.sms || 4000) / 1000), ux = a.sdx || 0, uy = a.sdy || 0;
+    gsap.timeline().to(bot.m.EYE, { xPercent: ux * 22, yPercent: uy * 13, duration: T * 0.32, ease: 'power2.out' })
+      .to(bot.m.EYE, { xPercent: 0, yPercent: 0, duration: T * 0.68, ease: 'sine.inOut' });
+    gsap.timeline().to(bot.m.bot, { rotation: ux * 3, duration: T * 0.32, ease: 'power2.out' })
+      .to(bot.m.bot, { rotation: 0, duration: T * 0.68, ease: 'sine.inOut' });
+  }
   function onAnchor(a) {
     if (!bot.wrap) return;
     if (bot.boot) { bot.target = a; bot.kind = a ? a.kind : null; return; }
+    strokeLead(a);
     var kind = a ? a.kind : null;
     if (a && !a.front) return;                         /* behind the camera: stay where he is */
     var was = bot.kind;
@@ -581,7 +594,7 @@
         row(sym('<path d="M7 18h10a4 4 0 0 0 .6-8A6 6 0 0 0 6 9.2A4.4 4.4 0 0 0 7 18z" fill="currentColor" opacity=".45"/>'), 'A cloud:', 'nobody has changed it for a year') +
         row(sym('<path d="M3 16h18l-2.5 4h-13z" fill="currentColor"/><rect x="9" y="11" width="6" height="4" rx="1.5" fill="currentColor" opacity=".5"/>'), 'Ferries:', 'projects with a live site') +
         '<li class="hwc-keyh">Round the City</li>' +
-        row(sym('<path d="M2 17c5-1 8-7 13-9" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" opacity=".35"/><path d="M9 13.4c2.4-1.9 4-4.1 6-5.4" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" opacity=".8"/><rect x="15" y="4" width="7" height="7" rx="3.5" fill="currentColor"/>'), 'The HelloWorld line:', 'the bot flies from district to district, idea to live, with a light trail behind him') +
+        row(sym('<path d="M2 17c5-1 8-7 13-9" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" opacity=".35"/><path d="M9 13.4c2.4-1.9 4-4.1 6-5.4" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" opacity=".8"/><rect x="15" y="4" width="7" height="7" rx="3.5" fill="currentColor"/>'), 'The HelloWorld line:', 'the bot swims from district to district, idea to live, with a light trail behind him') +
         row(sym('<ellipse cx="12" cy="19" rx="9" ry="3" fill="currentColor" opacity=".3"/><rect x="10" y="5" width="4" height="13" rx="2" fill="currentColor"/><circle cx="12" cy="5" r="2.4" fill="var(--accent)"/>'), 'Small islands:', 'the live sites, one for each address') +
         '<li class="hwc-keynote"><span>Districts: one for each category, told apart by place and name, not by colour. Violet means live, selected or now.</span></li>' +
         (GH.hasToken ? '' : '<li class="hwc-keynote"><span>Signed out, blocks show only what needs no files: the cover and the icon.</span></li>');
@@ -695,7 +708,7 @@
   }
 
   var TOURS = [
-    { id: 'line', label: 'Fly the HelloWorld line', text: 'From idea to live, following the bot' },
+    { id: 'line', label: 'Follow the bot on the HelloWorld line', text: 'From idea to live, district by district' },
     { id: 'demos', label: 'Demos to try', text: 'Each project with a demo, and its preview' },
     { id: 'sites', label: 'Live sites', text: 'Each live site, and what runs on it' },
     { id: 'sculptures', label: 'Statues and stones', text: 'Statues and pictures carved in stone, one after another' },
@@ -892,7 +905,8 @@
       loadImage: function (key, path) { return path && HWX.image ? HWX.image(key, path, 'files').catch(function () { return null; }) : Promise.resolve(null); },
       preview: cityPreviewPic,
       onTour: cityTourBar,
-      onAnchor: function (a) { if (!slideOn) onAnchor(a); }
+      onAnchor: function (a) { if (!slideOn) onAnchor(a); },
+      botSize: function () { return botSize(); }
     };
   }
 })();
