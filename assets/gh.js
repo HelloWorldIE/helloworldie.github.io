@@ -404,13 +404,15 @@
     return state;
   }
 
-  /* ---------- details: card, README, languages, last change ---------- */
+  /* ---------- details: card, README, languages, last change ----------
+     Only fields the HelloWorldIE Hub app's read-only access (Contents, Metadata) may read: a
+     field it may not read (issues or pull requests, say) makes GitHub drop the whole repository
+     from the answer, card and all. Open issues come from the repo list (open_issues_count). */
   var DETAIL_FIELDS =
     'card: object(expression: "HEAD:hub/project.json") { ... on Blob { text byteSize } } ' +
     'readme: object(expression: "HEAD:README.md") { ... on Blob { text byteSize } } ' +
     'readmeLower: object(expression: "HEAD:readme.md") { ... on Blob { text byteSize } } ' +
     'languages(first: 12, orderBy: {field: SIZE, direction: DESC}) { totalSize edges { size node { name color } } } ' +
-    'issues(states: OPEN) { totalCount } pullRequests(states: OPEN) { totalCount } ' +
     'defaultBranchRef { target { ... on Commit { committedDate messageHeadline history(since: $since) { totalCount } } } }';
 
   async function loadDetails(repos) {
@@ -427,7 +429,16 @@
         var data;
         try { data = await graphql(q, { since: since }); }
         catch (e) { try { data = await graphql(q, { since: since }); } catch (e2) { data = {}; } }
-        batch.forEach(function (r, n) { applyDetails(r, data['r' + n]); });
+        var missed = [];
+        batch.forEach(function (r, n) { if (data['r' + n]) applyDetails(r, data['r' + n]); else missed.push(r); });
+        /* GitHub left a repo out of the answer: read its card and README file by file instead */
+        await Promise.all(missed.map(async function (r) {
+          if (r.fork || r.archived) return;
+          var got = await Promise.all([fileText(r.name, 'hub/project.json').catch(function () { return null; }), fileText(r.name, 'README.md').catch(function () { return null; })]);
+          r.readme = got[1] && got[1].length < 400000 ? got[1] : null;
+          r.last_commit = r.last_commit || { date: r.pushed_at, message: '' };
+          setCard(r, got[0]);
+        }));
         done += batch.length; setProgress('details', done, total);
       });
     } else {
@@ -461,7 +472,6 @@
       (d.languages.edges || []).forEach(function (e) { langs[e.node.name] = e.size; LANG_COLOURS[e.node.name] = LANG_COLOURS[e.node.name] || e.node.color; });
       r.languages = langs;
     }
-    r.open_issues = (d.issues ? d.issues.totalCount : 0) + (d.pullRequests ? d.pullRequests.totalCount : 0);
     var t = d.defaultBranchRef && d.defaultBranchRef.target;
     if (t) { r.last_commit = { date: t.committedDate, message: t.messageHeadline || '' }; r.recent = t.history ? t.history.totalCount : null; }
     setCard(r, d.card && d.card.text);
