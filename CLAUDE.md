@@ -80,8 +80,18 @@ out of every list; `same_as` hides a second copy. A project without pictures get
 - **Sign in with GitHub** through the "HelloWorld Hub" GitHub App (read-only, 8-hour tokens,
   PKCE, popup to `callback.html`, the `auth/` worker swaps the code), shown only once
   `hub.auth.client_id` and `exchange_url` are set; the **read-only fine-grained token** route stays
-  as a fallback. The token lives in `sessionStorage['hw_gh_token']` and goes only to
-  `api.github.com`; Sign out also revokes it.
+  as a fallback. Tokens go only to `api.github.com`.
+- **Staying signed in** (Bryan, 2026-11-26): "Stay signed in on this device" (ticked by default)
+  keeps `localStorage['hw_gh_auth']` = the 8-hour token and the worker's sealed session (the
+  refresh token under AES-256-GCM with the worker's `SESSION_KEY`; the hub cannot open it).
+  `resume()` in `gh.js` renews through `/refresh` about ten minutes before the token ends, on a 401
+  (then retries once), and on load. One tab renews at a time (`hw_gh_auth_lock`), because each
+  session works once; the others take the new token from the `storage` event. Sign out sends the
+  token and the session to `/revoke`, which ends both. A pasted token, or a GitHub sign-in with the
+  box cleared, stays in `sessionStorage['hw_gh_token']` for that tab only. `hw-gh deploy auth
+  --new-session-key` signs every device out. Anything that can run script on this origin can read
+  a saved sign-in, which is one more reason only the hub may use Pages on this account and demos
+  never run with `allow-same-origin`.
 - **CSP** (meta in `index.html`): scripts from this site (plus inline, for demos), connections only
   to `api.github.com`, `raw.githubusercontent.com` and the sign-in worker once configured.
 - **Demos never run as the hub:** a `srcdoc` frame, `sandbox` without `allow-same-origin` (never add

@@ -3,8 +3,12 @@
    and fetches files and pictures with the viewer's own token. Nothing about any project is kept
    in this public repo: it all comes from GitHub at run time.
 
-   Sign-in is a read-only fine-grained token the viewer pastes. It is kept in this tab only
-   (sessionStorage) and sent only to api.github.com.
+   Sign-in: "Sign in with GitHub" (the HelloWorld Hub GitHub App, read-only) or a read-only
+   fine-grained token the viewer pastes. Tokens go only to api.github.com. A pasted token is kept in
+   this tab only (sessionStorage). A GitHub sign-in can stay on this device (Bryan, 2026-11-26):
+   localStorage['hw_gh_auth'] keeps the 8-hour token and the worker's sealed session (the refresh
+   token, which only the worker can open), so every tab shares one sign-in and it renews itself
+   until Sign out, or six months without a visit.
 
    API (window.HWGH):
      state, on(event, fn), progress, loads, hasToken, preview
@@ -37,7 +41,15 @@
   var API = PREVIEW ? '/api' : GH_API;
 
   var token = null;
-  if (!PREVIEW) { try { token = sessionStorage.getItem(TOKEN_KEY); } catch (e) {} }
+  var AUTH_LS = 'hw_gh_auth', AUTH_LOCK = 'hw_gh_auth_lock';
+  function readSaved() {
+    try { var v = JSON.parse(localStorage.getItem(AUTH_LS) || 'null'); return v && typeof v === 'object' && typeof v.session === 'string' ? v : null; } catch (e) { return null; }
+  }
+  function writeSaved(v) { try { if (v) localStorage.setItem(AUTH_LS, JSON.stringify(v)); else localStorage.removeItem(AUTH_LS); } catch (e) {} }
+  if (!PREVIEW) {
+    try { token = sessionStorage.getItem(TOKEN_KEY); } catch (e) {}
+    if (!token) { var saved0 = readSaved(); if (saved0 && saved0.token && saved0.exp - Date.now() > 120000) token = saved0.token; }
+  }
 
   var listeners = {};
   function on(ev, fn) { (listeners[ev] = listeners[ev] || []).push(fn); }
@@ -96,7 +108,11 @@
       state.rateLimited = reset; emit('ratelimit', reset);
       throw new RateLimit(reset);
     }
-    if (res.status === 401 && token) { clearToken(); emit('auth', state); throw new Error('Your token has ended or was revoked. Sign in again.'); }
+    if (res.status === 401 && token) {
+      // A remembered sign-in renews itself once, then the request runs again.
+      if (!opts.renewed && readSaved() && await resume({ failed: token })) return api(path, Object.assign({}, opts, { renewed: true }));
+      clearToken(); emit('auth', state); throw new Error('Your sign-in has ended or was revoked. Sign in again.');
+    }
     return res;
   }
 
@@ -139,14 +155,83 @@
   }
 
   /* ---------- sign-in ---------- */
-  function clearToken() { token = null; try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) {} state.signedIn = false; state.login = null; state.avatar = null; }
+  function clearToken() {
+    token = null; clearTimeout(renewTimer);
+    try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) {}
+    var sv = readSaved(); if (sv && sv.token) { sv.token = null; sv.exp = 0; writeSaved(sv); }   // keep the session: it can renew
+    state.signedIn = false; state.login = null; state.avatar = null;
+  }
+
+  /* ---------- staying signed in ----------
+     resume() gets a fresh token from the saved session through the worker. One tab renews at a
+     time (a short lock in localStorage), because each session works once; the others wait and take
+     the new token. A session GitHub has ended (401) is forgotten; a network failure keeps it. */
+  var resuming = null, renewTimer = 0;
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function usable(sv, minLeft, failed) { return !!(sv && sv.token && sv.token !== failed && sv.exp - Date.now() > minLeft); }
+  function resume(o) {
+    o = o || {};
+    if (resuming) return resuming;
+    var minLeft = o.minLeft == null ? 120000 : o.minLeft;
+    resuming = (async function () {
+      var sv = readSaved();
+      if (!sv || !AUTH_READY || PREVIEW) return false;
+      if (usable(sv, minLeft, o.failed)) { token = sv.token; scheduleRenew(); return true; }
+      var lock = 0; try { lock = +localStorage.getItem(AUTH_LOCK) || 0; } catch (e) {}
+      if (Date.now() - lock < 15000) {
+        for (var i = 0; i < 16; i++) {
+          await sleep(500);
+          var nv = readSaved(); if (!nv) return false;
+          if (nv.session !== sv.session) { if (usable(nv, minLeft, o.failed)) { token = nv.token; scheduleRenew(); return true; } sv = nv; break; }
+        }
+      }
+      try { localStorage.setItem(AUTH_LOCK, String(Date.now())); } catch (e) {}
+      try {
+        var res = await fetch(AUTH_BASE + '/refresh', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session: sv.session }) });
+        var j = await res.json().catch(function () { return {}; });
+        if (res.status === 401) { writeSaved(null); return false; }
+        if (!res.ok || !j.access_token) return false;
+        token = j.access_token;
+        writeSaved(j.session ? { token: j.access_token, exp: Date.now() + (j.expires_in || 28800) * 1000, session: j.session, sexp: Date.now() + (j.session_expires_in || 0) * 1000 } : null);
+        if (!j.session) { try { sessionStorage.setItem(TOKEN_KEY, token); } catch (e) {} }
+        try { sessionStorage.setItem(METHOD_KEY, 'app'); } catch (e) {}
+        scheduleRenew();
+        return true;
+      } catch (e) { return false; }
+      finally { try { localStorage.removeItem(AUTH_LOCK); } catch (e) {} }
+    })();
+    resuming.then(function () { resuming = null; }, function () { resuming = null; });
+    return resuming;
+  }
+  /* Renew about ten minutes before the token ends, so a tab left open stays signed in. */
+  function scheduleRenew() {
+    clearTimeout(renewTimer);
+    var sv = readSaved(); if (!sv || !sv.exp) return;
+    var wait = sv.exp - Date.now() - 600000 - Math.random() * 60000;
+    renewTimer = setTimeout(function () {
+      resume({ minLeft: 660000 }).then(function (ok) { if (!ok && !usable(readSaved(), 0)) { clearToken(); emit('auth', state); } });
+    }, Math.max(5000, Math.min(wait, 2147483000)));
+  }
+  /* Another tab signed out, or renewed: follow it. A pasted token in this tab is left alone. */
+  try {
+    window.addEventListener('storage', function (e) {
+      if (e.key !== AUTH_LS || PREVIEW) return;
+      var tabOnly = false; try { tabOnly = !!sessionStorage.getItem(TOKEN_KEY); } catch (x) {}
+      if (tabOnly) return;
+      var sv = readSaved();
+      if (!sv) { if (token) { clearToken(); emit('auth', state); } return; }
+      if (sv.token && sv.token !== token && token) { token = sv.token; scheduleRenew(); }
+    });
+  } catch (e) {}
 
   async function checkSession() {
+    if (!token && !PREVIEW && AUTH_READY && readSaved()) await resume();
     if (!token && !PREVIEW) { state.signedIn = false; return state; }
     setProgress('auth');
     try {
       var me = await apiJson('/user');
       state.signedIn = true; state.login = me.login; state.avatar = me.avatar_url;
+      if (readSaved() && !PREVIEW) scheduleRenew();
     } catch (e) {
       if (e instanceof RateLimit) throw e;
       clearToken();
@@ -155,14 +240,22 @@
     return state;
   }
 
-  // Checks a token with GitHub, then keeps it for this tab only.
-  async function adoptToken(t, method) {
+  // Checks a token with GitHub, then keeps it: on this device when a session comes with it (a GitHub
+  // sign-in with "Stay signed in"), otherwise for this tab only.
+  async function adoptToken(t, method, keep) {
     var res = await fetch(GH_API + '/user', { headers: { 'Accept': 'application/vnd.github+json', 'Authorization': 'Bearer ' + t } });
     if (res.status === 401) throw new Error('GitHub did not accept that token. Check it has not expired.');
     if (!res.ok) throw new Error('GitHub answered ' + res.status + '. Try again in a minute.');
     var me = await res.json();
     token = t;
-    try { sessionStorage.setItem(TOKEN_KEY, t); sessionStorage.setItem(METHOD_KEY, method); } catch (e) {}
+    try {
+      sessionStorage.setItem(METHOD_KEY, method);
+      if (keep && keep.session) {
+        sessionStorage.removeItem(TOKEN_KEY);
+        writeSaved({ token: t, exp: Date.now() + (keep.expires_in || 28800) * 1000, session: keep.session, sexp: Date.now() + (keep.session_expires_in || 0) * 1000 });
+        scheduleRenew();
+      } else sessionStorage.setItem(TOKEN_KEY, t);
+    } catch (e) {}
     state.signedIn = true; state.login = me.login; state.avatar = me.avatar_url;
     emit('auth', state);
     return { login: me.login, broad: /^gh[op]_/.test(t), method: method };
@@ -182,6 +275,7 @@
      a token. Call it straight from a click: the popup must open before anything is awaited. */
   var AUTH = (CFG.hub && CFG.hub.auth) || {};
   var AUTH_READY = !!(AUTH.client_id && typeof AUTH.exchange_url === 'string' && /^https:\/\/[a-z0-9.-]+\/?$/i.test(AUTH.exchange_url));
+  var AUTH_BASE = AUTH_READY ? AUTH.exchange_url.replace(/\/$/, '') : '';
   var METHOD_KEY = 'hw_gh_method';
   var CALLBACK = (CFG.hub && CFG.hub.url ? CFG.hub.url.replace(/\/?$/, '/') : location.origin + '/') + 'callback.html';
   function b64url(buf) {
@@ -191,7 +285,8 @@
   }
   function randomString(n) { var a = new Uint8Array(n); crypto.getRandomValues(a); return b64url(a); }
 
-  function signInWithGitHub() {
+  function signInWithGitHub(opts) {
+    var remember = !(opts && opts.remember === false);
     if (!AUTH_READY) return Promise.reject(new Error('Sign in with GitHub is not set up yet. Use a token instead.'));
     var popup = window.open('about:blank', 'hw-signin', 'popup,width=520,height=720');
     if (!popup) return Promise.reject(new Error('The browser blocked the sign-in window. Allow pop-ups for this site, then try again.'));
@@ -224,20 +319,26 @@
     }).then(function (res) {
       return res.json().catch(function () { return {}; }).then(function (j) {
         if (!res.ok || !j.access_token) throw new Error('The sign-in could not be finished (' + (j.error || res.status) + ').');
-        return adoptToken(j.access_token, 'app');
+        if (j.session && !remember) {        // not staying: spend the session at once, so no copy of it is left anywhere
+          fetch(AUTH_BASE + '/revoke', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session: j.session }) }).catch(function () {});
+        }
+        return adoptToken(j.access_token, 'app', remember && j.session ? j : null);
       });
     }, function (e) { try { popup.close(); } catch (x) {} throw e; });
   }
 
   function signOut() {
-    var method = null;
+    var method = null, sv = readSaved();
     try { method = sessionStorage.getItem(METHOD_KEY); sessionStorage.removeItem(METHOD_KEY); } catch (e) {}
-    if (method === 'app' && token && AUTH_READY) {
-      // Ends the token at GitHub too, not only in this tab.
-      fetch(AUTH.exchange_url.replace(/\/$/, '') + '/revoke', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: token }) }).catch(function () {});
+    if (AUTH_READY && ((method === 'app' && token) || sv)) {
+      // Ends the token at GitHub too, and spends the saved session, not only on this device.
+      var body = {}; if (method === 'app' && token) body.token = token; if (sv) body.session = sv.session;
+      fetch(AUTH_BASE + '/revoke', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(function () {});
     }
+    writeSaved(null);
     clearToken(); emit('auth', state);
   }
+  function staysSignedIn() { return !!readSaved(); }
 
   /* ---------- repos ---------- */
   function slim(r) {
@@ -630,7 +731,7 @@
     get progress() { return progress; },
     get hasToken() { return !!token || PREVIEW; },
     loadRepos: loadRepos, signIn: signIn, signOut: signOut,
-    signInWithGitHub: signInWithGitHub, authReady: AUTH_READY,
+    signInWithGitHub: signInWithGitHub, authReady: AUTH_READY, staysSignedIn: staysSignedIn,
     projects: projects, info: info, findRepo: findRepo, isCopy: isCopy,
     cleanCard: cleanCard, safePath: safePath, httpsUrl: httpsUrl,
     fileText: fileText, fileBlob: fileBlob, image: image, tree: tree,

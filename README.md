@@ -15,8 +15,8 @@ One page to find every HelloWorld project, read about it, try its demo and brows
 - **Dashboard:** projects, recent changes, the latest update and rules passing, on one screen.
 
 Signed out, the hub shows public repos only. To see private ones, sign in with GitHub or with a
-read-only fine-grained token. Either way the hub can only read, and the sign-in stays in that
-browser tab and goes only to GitHub.
+read-only fine-grained token. Either way the hub can only read, and the sign-in goes only to GitHub.
+A GitHub sign-in can stay on the device until you sign out; a token stays in that browser tab.
 
 ## How a project appears here
 

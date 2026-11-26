@@ -405,7 +405,7 @@
     $('#gh-signin').addEventListener('click', function () {
       var btn = this, err = $('#gh-err');
       err.textContent = ''; btn.disabled = true;
-      GH.signInWithGitHub().then(afterSignIn, function (e) { err.textContent = e.message; }).finally(function () { btn.disabled = false; });
+      GH.signInWithGitHub({ remember: !!($('#gh-remember') && $('#gh-remember').checked) }).then(afterSignIn, function (e) { err.textContent = e.message; }).finally(function () { btn.disabled = false; });
     });
     $('#signin-form').addEventListener('submit', function (e) {
       if (e.submitter && e.submitter.value === 'cancel') return;
@@ -416,7 +416,12 @@
         function (err) { tokenErr.textContent = err.message; }).finally(function () { $('#token-go').disabled = false; });
     });
     $('#signin-btn').addEventListener('click', openSignIn);
-    $('#signout-btn').addEventListener('click', function () { GH.signOut(); toast('Signed out. The sign-in is gone from this tab.'); GH.loadRepos(); });
+    $('#signout-btn').addEventListener('click', function () {
+      var everywhere = GH.staysSignedIn && GH.staysSignedIn();
+      GH.signOut();
+      toast(everywhere ? 'Signed out on this device. The sign-in is ended at GitHub too.' : 'Signed out. The sign-in is gone from this tab.');
+      GH.loadRepos();
+    });
   }
   function openSignIn() {
     if (!dlg) return;
