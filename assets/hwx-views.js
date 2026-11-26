@@ -1103,11 +1103,14 @@
     /* A stage of one fixed size (Bryan: "a fixed responsive gallery"): every step's picture fits
        inside it, centred, never larger than its own pixels, and Back and Next never move. */
     var spec = step.image ? i.repo.name + '|' + step.image : '';
-    box.innerHTML = pick + '<div class="hwx-guide"><div class="hwx-guide-main"><div class="hwx-stage">' + (step.image ? '<div class="hw-shot"' + SH.shotStyle(spec) + '><img alt="' + esc(SH.stepAlt(step, si)) + '" data-img="' + esc(spec) + '">' + SH.marksHTML(step.marks, si) + '</div>' : '<div class="hw-shot-none"><p>' + SH.boldOnly(step.text || '') + '</p></div>') + '</div>' +
+    box.innerHTML = pick + '<div class="hwx-guide"><div class="hwx-guide-main"><div class="hwx-stage">' + (step.image ? '<span class="hw-stage-load" aria-hidden="true"><i></i><i></i><i></i></span>' : '') + (step.image ? '<div class="hw-shot"' + SH.shotStyle(spec) + '><img alt="' + esc(SH.stepAlt(step, si)) + '" data-img="' + esc(spec) + '">' + SH.marksHTML(step.marks, si) + '</div>' : '<div class="hw-shot-none"><p>' + SH.boldOnly(step.text || '') + '</p></div>') + '</div>' +
       '<div class="hwx-guide-nav"><button type="button" class="btn btn-quiet btn-sm" data-gstep="' + (si - 1) + '"' + (si <= 0 ? ' disabled' : '') + '>' + I('left') + 'Back</button><span aria-live="polite">Step ' + (si + 1) + ' of ' + steps.length + '</span><button type="button" class="btn btn-primary btn-sm" data-gstep="' + (si + 1) + '"' + (si >= steps.length - 1 ? ' disabled' : '') + '>Next' + I('right') + '</button></div></div>' +
       '<div class="hwx-steps-wrap"><ol class="hwx-steps" aria-label="Steps">' + steps.map(function (s, k) { return '<li><button type="button" class="hwx-step" data-gstep="' + k + '"' + (k === si ? ' aria-current="step"' : '') + '><b>' + (k + 1) + '</b><span>' + SH.boldOnly(s.text || '') + '</span></button></li>'; }).join('') + '</ol></div></div>';
+    var pk = box.querySelector('.hwx-guide-pick');
+    box.style.setProperty('--pick-h', pk ? (pk.offsetHeight + 14) + 'px' : '0px');   /* the picker sits above the stage: count it */
     SH.watchImages(box);
-    [si + 1, si - 1].forEach(function (k) { var n = steps[k]; if (n && n.image && SH.preloadShot) SH.preloadShot(i.repo.name, n.image); });
+    /* every picture of this guide, loaded ahead: each step then arrives already sized */
+    steps.forEach(function (n) { if (n && n.image && SH.preloadShot) SH.preloadShot(i.repo.name, n.image); });
     var curStep = box.querySelector('.hwx-step[aria-current="step"]');
     if (curStep && curStep.scrollIntoView) { var list = box.querySelector('.hwx-steps'); if (list && list.scrollHeight > list.clientHeight) { var top = curStep.offsetTop - list.offsetTop; if (top < list.scrollTop || top + curStep.offsetHeight > list.scrollTop + list.clientHeight) list.scrollTop = Math.max(0, top - 8); } }
     box.onclick = function (e) {
@@ -1418,7 +1421,12 @@
     });
     var rz = null;
     /* the explorer bar's real height, for things sized to the space under the sticky bars */
-    var syncBars = function () { var n = document.querySelector('.hwx-nav'); if (n) document.documentElement.style.setProperty('--hwx-nav-h', n.offsetHeight + 'px'); };
+    var syncBars = function () {
+      var n = document.querySelector('.hwx-nav'), h = document.querySelector('.hw-hdr'), de = document.documentElement;
+      var nh = n ? n.offsetHeight : 110, hh = h ? h.offsetHeight : 64;
+      de.style.setProperty('--hwx-nav-h', nh + 'px');
+      de.style.setProperty('--avail-h', Math.max(320, window.innerHeight - nh - hh) + 'px');
+    };
     syncBars(); setTimeout(syncBars, 600);
     window.addEventListener('resize', syncBars, { passive: true });
     window.addEventListener('resize', function () { clearTimeout(rz); rz = setTimeout(function () { var r = parseRoute(); if (!ready()) return; if (r.view === 'line') drawRoad(list()); if (r.view === 'connections') drawGraph(list(), HWX._gAll); }, 200); }, { passive: true });

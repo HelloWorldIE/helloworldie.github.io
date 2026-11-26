@@ -298,7 +298,7 @@
      arrives (no jump between steps) and never enlarge a small picture past its own pixels. */
   var shotDims = Object.create(null);
   function noteShot(spec, im) { if (im.naturalWidth && im.naturalHeight) shotDims[spec] = { ar: im.naturalWidth / im.naturalHeight, nw: im.naturalWidth }; }
-  function shotStyle(spec) { var d = shotDims[spec]; return d ? ' style="--ar:' + d.ar.toFixed(4) + ';--nw:' + d.nw + 'px"' : ''; }
+  function shotStyle(spec) { var d = shotDims[spec]; return d ? ' style="--ar:' + d.ar.toFixed(4) + ';--nw:' + Math.round(d.nw * 1.5) + 'px"' : ''; }
   function preloadShot(repoName, path) {
     var spec = repoName + '|' + path; if (shotDims[spec]) return;
     image(repoName, path).then(function (url) { var im = new Image(); im.onload = function () { noteShot(spec, im); }; im.src = url; }, function () {});
@@ -312,10 +312,16 @@
         img.classList.add('is-on');
         var f = img.parentNode;
         noteShot(spec, img);
-        if (f && f.classList && f.classList.contains('hw-shot') && img.naturalWidth && img.naturalHeight) { f.style.setProperty('--ar', (img.naturalWidth / img.naturalHeight).toFixed(4)); f.style.setProperty('--nw', img.naturalWidth + 'px'); }
+        /* the frame takes the picture's shape, then shows: until now only the stage's loader showed */
+        if (f && f.classList && f.classList.contains('hw-shot') && img.naturalWidth && img.naturalHeight) { f.style.setProperty('--ar', (img.naturalWidth / img.naturalHeight).toFixed(4)); f.style.setProperty('--nw', Math.round(img.naturalWidth * 1.5) + 'px'); }
+        if (f && f.classList) f.classList.add('is-ready');
       }, { once: true });
       img.src = url;
-    }, function () { img.remove(); });
+    }, function () {
+      var f = img.parentNode;
+      if (f && f.classList && f.classList.contains('hw-shot')) { f.classList.add('is-ready', 'is-failed'); f.insertAdjacentHTML('afterbegin', '<p class="hw-shot-fail">This picture could not be loaded.</p>'); }
+      img.remove();
+    });
   }
 
   /* ---------- scroll reveal ----------
@@ -639,13 +645,13 @@
         '<button class="btn btn-primary btn-sm" type="button" data-step="1"' + (si === g.steps.length - 1 ? ' disabled' : '') + '>Next' + icon('right') + '</button>') +
         '<div class="hw-guide-full"><ol class="hw-guide-steps">' + g.steps.map(function (st, k) {
           return '<li><button type="button" data-goto="' + k + '"' + (k === si ? ' aria-current="step"' : '') + '><span class="n">' + (k + 1) + '</span><span>' + boldOnly(st.text) + '</span></button></li>';
-        }).join('') + '</ol><div class="hw-guide-pic">' +
+        }).join('') + '</ol><div class="hw-guide-pic">' + (s.image ? '<span class="hw-stage-load" aria-hidden="true"><i></i><i></i><i></i></span>' : '') +
         (s.image ? '<div class="hw-shot"' + shotStyle(r.name + '|' + s.image) + '><img alt="' + esc(stepAlt(s, si)) + '" data-img="' + esc(r.name + '|' + s.image) + '">' + marksHTML(s.marks, si) + '</div>' : '<p class="hw-guide-text">' + boldOnly(s.text) + '</p>') +
         '</div></div>';
       if (first) openFull(html, g.title);
       else { full.innerHTML = html; var cur = $('[aria-current="step"]', full); if (cur) cur.focus(); }
       watchImages(full);
-      [si + 1, si - 1].forEach(function (k) { var n = g.steps[k]; if (n && n.image) preloadShot(r.name, n.image); });
+      g.steps.forEach(function (n) { if (n && n.image) preloadShot(r.name, n.image); });
       announce('Step ' + (si + 1) + ' of ' + g.steps.length + ': ' + String(s.text || '').replace(/\*\*/g, ''));
     }
     draw(si || 0, true);
