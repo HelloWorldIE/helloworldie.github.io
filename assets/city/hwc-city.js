@@ -21,8 +21,8 @@
      a play sign      a demo: point at the building and a preview of its picture rises
      flags            tools it is built with that other projects use too
      a crane          work in progress;  ruins: a retired project; grey and lower: paused
-     the line         the HelloWorld line: it links the districts' squares from idea to live, in
-                      the order of the stages; the bot rides its car
+     the bot's trail  the HelloWorld line: the bot flies from district to district, idea to live,
+                      in the order of the stages, leaving a light trail that fades behind him
      small islands    the live sites, one per address, with a beacon; a ferry for every project
                       that runs there
      people           changes made in the last 30 days, round their block
@@ -44,7 +44,7 @@ import { mergeGeometries } from '../vendor/three/addons/utils/BufferGeometryUtil
 import { SVGLoader } from '../vendor/three/addons/loaders/SVGLoader.js';
 import { variantGeometry, variantFor, fileTone, familyFor, extOf, signatureOf, KEY, KEY_GLYPH } from './city-architecture.js?v=1';
 import { layoutPoly, plotToSite, blobPolygon, polyCentroid, inradiusAt, polyArea, seedPlan, roundPoly } from './city-plan.js?v=1';
-import * as P from './city-props.js?v=1';
+import * as P from './city-props.js?v=2';
 import { helloworld } from '../mascot/characters/helloworld.js';
 
 export { KEY, KEY_GLYPH };
@@ -219,6 +219,9 @@ function towerMaterial(uniforms) {
 }
 
 /* The palette, as colours and numbers, so it can be eased from one theme to the other. */
+const FACADE_FB = ['#f2a9b8', '#f6be94', '#f0d27e', '#9fd8b4', '#95c9ec', '#aab6f2', '#c6b0f2', '#ef9f8e', '#b7d2a0', '#8fd2ca'];
+/* A project's own colour: the same in every view, picked from its name. */
+const facadeOf = (key) => hash32(String(key) + '|facade') % FACADE_FB.length;
 const C = (v, fb) => new THREE.Color(typeof v === 'string' || typeof v === 'number' ? v : fb);
 const N = (v, fb) => (typeof v === 'number' && isFinite(v) ? v : fb);
 function readPalette(p) {
@@ -238,6 +241,9 @@ function readPalette(p) {
   out.link = pair(p.link, '#262430', 0.16);
   out.route = pair(p.route, '#6d44e0', 0.85);
   out.flags = (Array.isArray(p.flags) && p.flags.length ? p.flags : ['#262430', '#6b6880', '#a19fb0', '#cfcbdc']).map((c) => C(c, '#6b6880'));
+  /* the buildings' own colours (Bryan, 2026-11-26: "colourful and diverse"): soft tones from the
+     brand's confetti, one per project, its files in lighter shades of it */
+  out.facades = (Array.isArray(p.facades) && p.facades.length ? p.facades : FACADE_FB).map((c) => C(c, '#ffffff'));
   return out;
 }
 function lerpPalette(a, b, k) {
@@ -246,6 +252,7 @@ function lerpPalette(a, b, k) {
   ['key', 'fill', 'shadow', 'ghost', 'pillFill', 'pillLine', 'link', 'route'].forEach((x) => { out[x] = { color: a[x].color.clone().lerp(b[x].color, k), i: a[x].i + (b[x].i - a[x].i) * k }; });
   out.hemi = { sky: a.hemi.sky.clone().lerp(b.hemi.sky, k), ground: a.hemi.ground.clone().lerp(b.hemi.ground, k), i: a.hemi.i + (b.hemi.i - a.hemi.i) * k };
   out.flags = b.flags.map((c, i) => (a.flags[i] ? a.flags[i].clone().lerp(c, k) : c.clone()));
+  out.facades = b.facades.map((c, i) => (a.facades[i] ? a.facades[i].clone().lerp(c, k) : c.clone()));
   return out;
 }
 
@@ -383,7 +390,6 @@ export class City {
     this.accentMat = this._toneMat('accent', {}, true);
     this.softMat = this._toneMat('accentSoft', {}, true);
     this.faintMat = this._toneMat('accentFaint', {}, true);
-    this.lineMat = this._toneMat('statue', { roughness: 0.8 }, true);
     this.stoneMat = this._toneMat('body2', {}, true);
     this.edgeMat = new THREE.LineBasicMaterial({ color: 0xe2e0e8 });
     this.linkMat = new THREE.LineBasicMaterial({ color: 0x262430, transparent: true, opacity: 0.16, depthWrite: false });
@@ -443,7 +449,11 @@ export class City {
      has sent it down. */
   _towerColour(t, out) {
     const Pl = this.P;
-    out.copy(Pl.tones[t.tone] || Pl.tones.body).multiplyScalar(t.shade || 1);
+    if (t.facade != null && t.tone !== 'dim' && Pl.facades && Pl.facades.length) {
+      out.copy(Pl.facades[t.facade % Pl.facades.length]);
+      if (t.mix) out.lerp(Pl.tones.body, t.mix);                  /* a file: a lighter shade of its project's colour */
+      out.multiplyScalar(t.shade || 1);
+    } else out.copy(Pl.tones[t.tone] || Pl.tones.body).multiplyScalar(t.shade || 1);
     if (t.sinkE > 0.001) out.lerp(Pl.tones.dim, Math.min(1, t.sinkE) * 0.7);
     return out;
   }
@@ -661,7 +671,7 @@ export class City {
       shade = 0.985 + unit(it.key, 'l') * 0.03;
     }
     const t = this._place(arch, { type: 'project', item: it, district: d, x: site.x, z: site.z, w: foot, dd: foot,
-      rot: site.angle, h, tone, shade, pointed: !!POINTED[it.form] && !it.retired, order: d.towers.length / Math.max(1, d.count), seed: unit(it.key, 's'),
+      rot: site.angle, h, tone, shade, facade: facadeOf(it.key), pointed: !!POINTED[it.form] && !it.retired, order: d.towers.length / Math.max(1, d.count), seed: unit(it.key, 's'),
       jitter: unit(it.key, 'j') * 320 }, geoFn);
     t.rest = rest; t.plot = plot; t.mainPlot = mainPlot; t.extras = [];
     for (let k = 0; k < (it.guides && !it.retired ? mainPlot.length : 0); k++) {   /* a tree by the door: it has guides */
@@ -764,7 +774,8 @@ export class City {
       const arch = variantFor(f.p, c.rank, false, { files: 20 }, depth);
       const h = Math.max(1.1, Math.min(t.h * (0.2 + 0.45 * c.rank), foot * 4, MAX_H * 0.6));
       this._place(arch, { type: 'file', item: it, main: t, file: f, district: d, x: site.x, z: site.z, w: foot * 0.92, dd: foot * 0.92,
-        rot: site.angle, h, tone: fileTone(f.p), shade: 0.99 + unit(f.p, 'l') * 0.02, order: 0, seed: unit(f.p, 's'), t0 });
+        rot: site.angle, h, tone: fileTone(f.p), shade: 0.99 + unit(f.p, 'l') * 0.02, order: 0, seed: unit(f.p, 's'), t0,
+        facade: unit(f.p, 'fv') < 0.22 ? t.facade + 1 + (hash32(f.p) % 3) : t.facade, mix: 0.18 + unit(f.p, 'fm') * 0.5 });
     } else if (c.kind === 'font') this._column(c.file, site, foot, t0, owner);
     else if (c.kind === 'svg') this._statue({ sha: c.file.h, path: c.file.p }, site, t0, owner, 2.2);
     else if (c.kind === 'icon') this._statue({ path: it.icon }, site, t0, owner, 3.4);
@@ -1023,16 +1034,9 @@ export class City {
         pts.push(new THREE.Vector3((d.plaza.x + n.plaza.x) / 2, MAX_H * 0.8, (d.plaza.z + n.plaza.z) / 2));
       }
     });
+    /* No cable and no car (Bryan, 2026-11-26): the bot himself flies the route, leaving a light
+       trail that fades behind him. The curve is his path; `car` is only the point he is at. */
     const curve = new THREE.CatmullRomCurve3(pts, false, 'centripetal');
-    const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 600, 0.07, 6), this.lineMat);
-    this.props.add(tube);
-    stops.forEach((d) => {
-      const h = 5.1;
-      const pole = new THREE.Mesh(P.paint(new THREE.CapsuleGeometry(0.16, h, 4, 8).translate(0, h / 2, 0), 'body3'), this.propMat);
-      pole.position.set(d.plaza.x, d.monumentTop - 0.6, d.plaza.z);
-      pole.castShadow = true;
-      this.props.add(pole);
-    });
     const NS = 900, samples = [];
     for (let i = 0; i <= NS; i++) samples.push(curve.getPointAt(i / NS));
     const stopU = pts.filter((_, i) => i % 2 === 0).map((p) => {
@@ -1040,14 +1044,72 @@ export class City {
       samples.forEach((q, i) => { const dd = q.distanceToSquared(p); if (dd < bd) { bd = dd; bi = i; } });
       return bi / NS;
     });
-    const car = P.lineCar(this.propMat);
-    car.scale.setScalar(1.6);
+    const car = new THREE.Object3D();
     this.props.add(car);
-    this._pickable(car, { type: 'info', kindLabel: 'Idea to live', title: 'The HelloWorld line',
-      text: 'It stops at each district in order, from idea to live. The bot rides it.' });
+    this._buildTrail();
     this.cable = { curve, stopU, car, i: 0, dir: 1, t0: performance.now(), phase: 'wait', u: stopU[0],
       names: stops.map((d) => d.label), stages: stops.map((d) => d.hood.stageLabel || ''), counts: stops.map((d) => d.count) };
     this._stepLine(performance.now());
+  }
+  /* ---- the bot's light trail: a soft ribbon along the last 2.8 s of his path, facing the camera,
+     narrowing and fading to nothing behind him. A faint wide band under a brighter core. It is
+     worked out from the route itself (where he was at each moment of the last 2.8 s), not from past
+     frames, so it is just as smooth on a slow machine. A stop lasts longer than the trail, so the
+     trail only ever lies along one leg: the one he is on, or the one he has just finished. ---- */
+  _buildTrail() {
+    const MAX = 96;
+    const mk = (opacity) => {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MAX * 2 * 3), 3).setUsage(THREE.DynamicDrawUsage));
+      g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(MAX * 2 * 4), 4).setUsage(THREE.DynamicDrawUsage));
+      const idx = [];
+      for (let i = 0; i < MAX - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+      g.setIndex(idx); g.setDrawRange(0, 0);
+      const m = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide, toneMapped: false, opacity });
+      const mesh = new THREE.Mesh(g, m);
+      mesh.frustumCulled = false; mesh.renderOrder = 5; mesh.visible = false;
+      this.props.add(mesh);
+      return mesh;
+    };
+    this.trail = { MAX, halo: mk(1), core: mk(1), ms: 2800 };
+  }
+  _stepTrail(now) {
+    const tr = this.trail, c = this.cable, leg = c && c.leg;
+    const hide = () => { tr.core.visible = false; tr.halo.visible = false; };
+    if (!tr) return;
+    if (!leg || REDUCED.matches || this.walking) return hide();
+    const from = Math.max(leg.t0, now - tr.ms), to = Math.min(leg.t0 + leg.ms, now);
+    if (to - from < 30) return hide();
+    const n = tr.MAX, ease = (k) => 0.5 - 0.5 * Math.cos(clamp(k, 0, 1) * Math.PI);
+    const pts = [];
+    for (let j = 0; j < n; j++) {
+      const tau = from + (to - from) * (j / (n - 1));
+      const u = clamp(leg.a + (leg.b - leg.a) * ease((tau - leg.t0) / leg.ms), 0, 1);
+      pts.push({ p: c.curve.getPointAt(u), life: 1 - (now - tau) / tr.ms });
+    }
+    const Pl = this.P, head = Pl.tones.accent, tail = Pl.tones.accentSoft;
+    const cam = this.camera.position, side = new THREE.Vector3(), tg = new THREE.Vector3(), view = new THREE.Vector3(), col = new THREE.Color();
+    /* widths in screen pixels (half of each band), turned into world units at each point's distance */
+    const perPx = 2 * Math.tan(THREE.MathUtils.degToRad(this.camera.fov) / 2) / Math.max(1, this._h || 600);
+    [[tr.core, 5, 1], [tr.halo, 16, 0.26]].forEach(([mesh, width, alpha]) => {
+      const pos = mesh.geometry.attributes.position, cl = mesh.geometry.attributes.color;
+      for (let i = 0; i < n; i++) {
+        const p = pts[i].p, a = pts[Math.max(0, i - 1)].p, b = pts[Math.min(n - 1, i + 1)].p;
+        tg.subVectors(b, a); if (tg.lengthSq() < 1e-8) tg.set(1, 0, 0);
+        view.subVectors(cam, p);
+        side.crossVectors(tg, view).normalize();
+        const life = Math.max(0, pts[i].life);                             /* 1 where he is now, 0 at the end */
+        const w = width * perPx * view.length() * Math.pow(life, 0.8);
+        pos.setXYZ(i * 2, p.x + side.x * w, p.y + side.y * w, p.z + side.z * w);
+        pos.setXYZ(i * 2 + 1, p.x - side.x * w, p.y - side.y * w, p.z - side.z * w);
+        col.copy(tail).lerp(head, Math.pow(life, 1.4));
+        const A = alpha * Math.pow(life, 1.5);
+        cl.setXYZW(i * 2, col.r, col.g, col.b, A); cl.setXYZW(i * 2 + 1, col.r, col.g, col.b, A);
+      }
+      mesh.geometry.setDrawRange(0, (n - 1) * 6);
+      pos.needsUpdate = true; cl.needsUpdate = true;
+      mesh.visible = true;
+    });
   }
   _stepLine(now) {
     const c = this.cable;
@@ -1058,6 +1120,7 @@ export class City {
       if (c.phase === 'wait' && now - c.t0 > wait) {
         if (c.i + c.dir < 0 || c.i + c.dir >= c.stopU.length) c.dir = -c.dir;
         c.phase = 'move'; c.t0 = now;
+        c.leg = { a: c.stopU[c.i], b: c.stopU[c.i + c.dir], t0: now, ms: move };
       }
       if (c.phase === 'move') {
         const k = Math.min(1, (now - c.t0) / move), a = c.stopU[c.i], b = c.stopU[c.i + c.dir];
@@ -1067,8 +1130,9 @@ export class City {
     }
     const uu = clamp(u, 0, 1), p = c.curve.getPointAt(uu), tg = c.curve.getTangentAt(uu);
     c.u = uu;
-    c.car.position.set(p.x, p.y - 1.8 * c.car.scale.y, p.z);
+    c.car.position.set(p.x, p.y, p.z);
     c.car.rotation.y = Math.atan2(tg.x, tg.z) - Math.PI / 2;
+    this._stepTrail(now);
     if (this.ride) {
       /* ride along: sit just behind the car, looking down the line */
       const dir = tg.clone().multiplyScalar(c.dir), car = c.car.position;
@@ -1340,6 +1404,7 @@ export class City {
       const h = Math.min((1.4 + mag * MAX_H) * (sig.verticality || 1), foot * 4.5, MAX_H * 1.4);
       this._place(arch, { type: 'file', item: f, district: d, x: c.site.x, z: c.site.z, w: foot, dd: foot,
         rot: c.site.angle + (sig.twist || 0) * (unit(f.path, 'tw') - 0.5), h, tone: fileTone(f.path), shade: 1 + (sig.shade || 0) * 0.5,
+        facade: facadeOf(lv.repo + '/' + (d.label || d.key || '')) + (unit(f.path, 'fv') < 0.18 ? 1 : 0), mix: 0.08 + unit(f.path, 'fm') * 0.42,
         order: d.towers.length / Math.max(1, cells.length), seed: unit(f.path, 's'), jitter: unit(f.path, 'j') * 200 });
     });
   }
@@ -2266,7 +2331,7 @@ export class City {
     if (this.focusAt) { out.copy(this.focusAt); return 'focus'; }
     if (this.selected) { const t = this.selected; out.set(t.x, BASE + (t.curH || t.h) + 2.4, t.z); return 'focus'; }
     if (this.hoodSel) { const d = this.districts.find((x) => x.hood && x.hood.id === this.hoodSel); if (d && d.label_) { out.copy(d.label_.position); return 'focus'; } }
-    if (this.level.kind === 'estate' && this.cable) { out.copy(this.cable.car.position); out.y += 1.0; return 'car'; }
+    if (this.level.kind === 'estate' && this.cable) { out.copy(this.cable.car.position); return 'car'; }
     return null;
   }
   _emitAnchor() {
@@ -2439,7 +2504,7 @@ export class City {
     this.labels.forEach((o) => { this.rig.remove(o); if (o.element.parentNode) o.element.remove(); });
     this.painters = this.painters.filter((p) => p.keep);
     this.districts = []; this.towers = []; this.labels = []; this.pickables = []; this.anims = []; this.swings = []; this.later = []; this.movers = []; this.roofs = [];
-    this.cable = null; this.siteObjs = null; this.siteRoutes = null;
+    this.cable = null; this.trail = null; this.siteObjs = null; this.siteRoutes = null;
     this.selected = null; this.hoodSel = null; this.hover = null; this._shown = null; this.focusAt = null;
     this.prev.t = null; this.prev.a = 0;
     this.ringTarget = 0; this.ringA = 0;

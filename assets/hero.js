@@ -248,6 +248,14 @@
       if (back >= 0 && back < 8) weeks[7 - back]++;
     });
     var latest = list.filter(function (p) { return p.t; }).sort(function (a, b) { return b.t - a.t; });
+    /* the skyline: every project that is not retired, by stage then category, as in the City */
+    var sizes = Object.create(null);
+    repos.forEach(function (r) { if (r && r.name) sizes[r.name] = +r.size || 0; });
+    var catAt = Object.create(null), at = 0, stages = (CFG && CFG.stages) || {};
+    Object.keys(stages).forEach(function (s) { (stages[s].categories || []).forEach(function (c) { if (!(c in catAt)) catAt[c] = at++; }); });
+    var sky = list.filter(function (p) { return p.status !== 'retired'; }).map(function (p) {
+      return { repo: p.repo, title: p.title, status: p.status, size: sizes[p.repo] || 0, at: p.category in catAt ? catAt[p.category] : 99 };
+    }).sort(function (a, b) { return (a.at - b.at) || a.title.localeCompare(b.title); });
     var thisWeek = weeks[7], before = Math.max.apply(null, weeks.slice(0, 7)), act;
     if (!list.length) act = 'No changes to show yet.';
     else if (!thisWeek) act = latest.length ? 'Quiet this week. The last change was ' + ago(latest[0].t, now) + '.' : 'Quiet this week.';
@@ -263,7 +271,7 @@
       detailsReady: !!snap.detailsReady, error: snap.error || null, rateLimited: snap.rateLimited || null,
       total: list.length, live: live, livePct: list.length ? live / list.length : 0, projSay: projSay,
       weeks: weeks, firstWeek: ws - 7 * WEEK, actSay: act,
-      latest: latest.slice(0, 3), health: healthOf(snap, byName), now: now
+      latest: latest.slice(0, 3), health: healthOf(snap, byName), now: now, sky: sky
     };
   }
 
@@ -321,15 +329,76 @@
     var actions = null;
     var stateLine = h('p', 'hwh-state');
     head.appendChild(eyebrow); head.appendChild(title); head.appendChild(lead);
-    if (mode === 'hero') {
-      actions = h('p', 'hwh-actions');
-      var cityLink = h('a', 'hwh-quiet', 'Walk through the City');
-      cityLink.href = hrefBase + '#/city'; cityLink.setAttribute('data-hwh-route', '#/city'); cityLink.setAttribute('data-card', 'city');
-      actions.appendChild(cityLink);
-      head.appendChild(actions);
-    }
     head.appendChild(stateLine);
-    inner.appendChild(head);
+    var top = h('div', 'hwh-top' + (mode === 'hero' ? ' has-sky' : ''));
+    top.appendChild(head);
+    var sky = mode === 'hero' ? makeSky() : null;
+    if (sky) { top.appendChild(sky.el); actions = sky.el; }
+    inner.appendChild(top);
+
+    /* ----- the skyline: every project as a pill building in its City colour, the live ones with
+       the bot's two eyes on top. They grow up from the ground once, in order; pointing at one says
+       its name and lifts it; selecting it opens the project. ----- */
+    function hash32(str) {           // the City's own hash (assets/city/hwc-city.js), so colours match
+      var x = 2166136261 >>> 0;
+      for (var i = 0; i < str.length; i++) { x ^= str.charCodeAt(i); x = Math.imul(x, 16777619) >>> 0; }
+      return x >>> 0;
+    }
+    function makeSky() {
+      var el = h('div', 'hwh-sky');
+      var fig = svg('svg', { 'class': 'hwh-sky-svg', viewBox: '0 0 640 200', preserveAspectRatio: 'xMidYMax meet', 'aria-hidden': 'true', focusable: 'false' });
+      var cap = h('p', 'hwh-sky-cap');
+      var capT = h('span', 'hwh-sky-t', 'Every project is a building in the City');
+      var go = h('a', 'hwh-quiet', 'Walk through the City');
+      go.href = hrefBase + '#/city'; go.setAttribute('data-hwh-route', '#/city'); go.setAttribute('data-card', 'city');
+      cap.appendChild(capT); cap.appendChild(go);
+      el.appendChild(fig); el.appendChild(cap);
+      var drawnSig = '', grown = false, rest = capT.textContent, labels = (window.HW_CONFIG && window.HW_CONFIG.statuses) || {};
+      function draw(m) {
+        var list = (m && m.sky) || [];
+        var sig = list.map(function (b) { return b.repo + ':' + b.status + ':' + b.size; }).join('|');
+        if (sig === drawnSig) return;
+        drawnSig = sig;
+        while (fig.firstChild) fig.removeChild(fig.firstChild);
+        if (!list.length) return;
+        var VW = 640, base = 192, n = list.length;
+        var w = Math.max(9, Math.min(30, (VW - 8) / (n * 1.34))), gap = w * 0.34;
+        var span = n * w + (n - 1) * gap, x0 = (VW - span) / 2;
+        var lmax = Math.log10(Math.max.apply(null, list.map(function (b) { return b.size; }).concat([10])) + 10);
+        fig.appendChild(svg('rect', { 'class': 'hwh-sky-ground', x: Math.max(0, x0 - 14), y: base, width: Math.min(VW, span + 28), height: 6, rx: 3 }));
+        var animate = !grown && !RM;
+        list.forEach(function (b, i) {
+          var k = (Math.log10(b.size + 10) - 1) / Math.max(0.5, lmax - 1);
+          var hgt = Math.round(40 + 136 * Math.max(0, Math.min(1, k)));
+          var x = x0 + i * (w + gap), y = base - hgt;
+          var g = svg('g', { 'class': 'hwh-b' + (b.status === 'paused' ? ' is-paused' : '') + (animate ? ' is-growing' : ''), 'data-repo': b.repo, 'data-i': i });
+          g.style.setProperty('--d', Math.round(i * 45 + (hash32(b.repo) % 90)) + 'ms');
+          g.appendChild(svg('rect', { 'class': 'hwh-b-body', x: x.toFixed(1), y: y, width: w.toFixed(1), height: hgt, rx: (w / 2).toFixed(1), fill: 'var(--hwh-f' + (hash32(b.repo + '|facade') % 10) + ')' }));
+          if (b.status === 'live') {
+            var ew = Math.max(2, w * 0.17), eh = Math.max(4, w * 0.4), ey = y + w * 0.42;
+            g.appendChild(svg('rect', { 'class': 'hwh-b-eye', x: (x + w * 0.29 - ew / 2).toFixed(1), y: ey.toFixed(1), width: ew.toFixed(1), height: eh.toFixed(1), rx: (ew / 2).toFixed(1) }));
+            g.appendChild(svg('rect', { 'class': 'hwh-b-eye', x: (x + w * 0.71 - ew / 2).toFixed(1), y: ey.toFixed(1), width: ew.toFixed(1), height: eh.toFixed(1), rx: (ew / 2).toFixed(1) }));
+          }
+          g.__b = b;
+          fig.appendChild(g);
+        });
+        if (animate) grown = true;
+      }
+      fig.addEventListener('mouseover', function (e) {
+        var g = e.target.closest && e.target.closest('.hwh-b'); if (!g || !g.__b) return;
+        var b = g.__b, st = b.status && own(labels, b.status) ? labels[b.status] : '';
+        capT.textContent = b.title + (st ? ', ' + lowerFirst(st) : '');
+        el.classList.add('is-pointing');
+      });
+      fig.addEventListener('mouseleave', function () { capT.textContent = rest; el.classList.remove('is-pointing'); });
+      fig.addEventListener('click', function (e) {
+        var g = e.target.closest && e.target.closest('.hwh-b'); if (!g || !g.__b) return;
+        var route = '#/p/' + enc(g.__b.repo);
+        if (onOpen) onOpen(route, { card: 'sky', demo: !!(model && model.demo) });
+        else location.href = hrefBase + route;
+      });
+      return { el: el, draw: draw };
+    }
 
     var deck = h('div', 'hwh-deck');
     inner.appendChild(deck);
@@ -702,6 +771,7 @@
       lastLevel = level();
       model = buildModel(snap, lastLevel, window.HW_CONFIG || CFG);
       setState(model);
+      if (sky) sky.draw(model);
       cards.forEach(function (c) { c.next = model; if (c.gate) { c.play(!c.played); c.played = true; } });
       narrate(model);
     }

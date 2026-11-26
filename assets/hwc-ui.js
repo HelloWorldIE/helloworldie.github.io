@@ -15,8 +15,8 @@
    colour only through palette(). One canvas and one City for the session; it pauses when nobody
    can see it.
 
-   The bot is the real mascot (assets/mascot), drawn over the canvas, one at a time: he rides the
-   HelloWorld line's car, swims to whatever you select with the jellyfish pulse, looks at it, scans
+   The bot is the real mascot (assets/mascot), drawn over the canvas, one at a time: he flies the
+   HelloWorld line from district to district with a light trail fading behind him, swims to whatever you select with the jellyfish pulse, looks at it, scans
    while you search and is found when something matches. Never a 3D model of him. He is in the
    #/city view only (the header has its own bot on the other views).
    ========================================================================== */
@@ -29,7 +29,7 @@
   var GH = window.HWGH, CFG = window.HW_CONFIG || {};
   if (!GH) return;
   var OWNER = CFG.account || GH.account;
-  var CITY_URL = 'assets/city/hwc-city.js?v=1';
+  var CITY_URL = 'assets/city/hwc-city.js?v=2';
 
   /* ---------------- small helpers ---------------- */
   var own = function (o, k) { return o != null && typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k); };
@@ -104,7 +104,9 @@
       },
       key: ['#ffffff', 1.3], fill: ['#6d44e0', 0], hemi: ['#ffffff', '#d9d6e3', 2.25],
       shadow: ['#262430', 0.15], ghost: ['#262430', 0.05], pillFill: ['#6d44e0', 0.11], pillLine: ['#6d44e0', 0.22],
-      link: ['#262430', 0.18], route: ['#6d44e0', 0.85], flags: ['#6b6880', '#8f8ba3', '#b3afc4', '#d6d2e2']
+      link: ['#262430', 0.18], route: ['#6d44e0', 0.85], flags: ['#6b6880', '#8f8ba3', '#b3afc4', '#d6d2e2'],
+      /* each project's own colour (Bryan, 2026-11-26): soft tones of the brand's confetti; files are lighter shades */
+      facades: ['#f2a9b8', '#f6be94', '#f0d27e', '#9fd8b4', '#95c9ec', '#aab6f2', '#c6b0f2', '#ef9f8e', '#b7d2a0', '#8fd2ca']
     },
     dark: {
       dark: true,
@@ -117,7 +119,8 @@
       },
       key: ['#f2f0f8', 1.35], fill: ['#6d44e0', 0.5], hemi: ['#c4bce6', '#241f34', 2.3],
       shadow: ['#000000', 0.34], ghost: ['#f7f6fb', 0.07], pillFill: ['#a98bff', 0.09], pillLine: ['#a98bff', 0.2],
-      link: ['#f7f6fb', 0.16], route: ['#a98bff', 0.85], flags: ['#f2f0f8', '#b9b5c9', '#7d7891', '#4a4460']
+      link: ['#f7f6fb', 0.16], route: ['#a98bff', 0.85], flags: ['#f2f0f8', '#b9b5c9', '#7d7891', '#4a4460'],
+      facades: ['#9a5c70', '#a06c50', '#9c8648', '#4f8a6a', '#4d7ea4', '#5f6cab', '#7a62ad', '#a25e52', '#6c8858', '#4a8682']
     }
   };
   function isDark() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
@@ -254,7 +257,7 @@
   }
 
   /* ---------------- the bot over the City ----------------
-     One mascot for the session. It rides the line's car (its seat), swims to what you select with the
+     One mascot for the session. It flies the line (its own route, the light trail is the City's), swims to what you select with the
      jellyfish pulse (gather, one long push that carries a little past, a soft settle), eyes leading,
      then looks at it. Under reduced motion it is still and every move is a cut. */
   var bot = { wrap: null, m: null, p: null, x: 0, y: 0, placed: false, kind: null, target: null, swim: null, raf: 0, seen: false };
@@ -315,7 +318,7 @@
     if (!b.w) return null;
     if (bot.boot) { x = b.w / 2; y = b.h / 2 - s / 2 - 48; }                           /* over the sentence while the City is built, or cannot be */
     else if (!a) { x = b.w - s / 2 - 28; y = s / 2 + 78; }                              /* at rest, in the light's corner */
-    else if (a.kind === 'car') { x = a.x; y = a.y - s * 0.42; }                        /* riding: sitting on the car */
+    else if (a.kind === 'car') { x = a.x; y = a.y; }                                      /* flying the line: the trail starts under him */
     else {
       x = a.x; y = a.y - s / 2 - 34;                                                  /* just above the label, looking down at it */
       if (y < s / 2 + 8) { y = Math.max(s / 2 + 8, a.y); x = a.x + (a.x < b.w / 2 ? 1 : -1) * (s / 2 + 110); }   /* no room above: beside it */
@@ -578,7 +581,7 @@
         row(sym('<path d="M7 18h10a4 4 0 0 0 .6-8A6 6 0 0 0 6 9.2A4.4 4.4 0 0 0 7 18z" fill="currentColor" opacity=".45"/>'), 'A cloud:', 'nobody has changed it for a year') +
         row(sym('<path d="M3 16h18l-2.5 4h-13z" fill="currentColor"/><rect x="9" y="11" width="6" height="4" rx="1.5" fill="currentColor" opacity=".5"/>'), 'Ferries:', 'projects with a live site') +
         '<li class="hwc-keyh">Round the City</li>' +
-        row(sym('<path d="M2 7c6-3 14-3 20 0" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="7" y="10" width="10" height="5" rx="2.5" fill="currentColor"/><circle cx="12" cy="18.5" r="3" fill="var(--accent)" opacity=".6"/>'), 'The HelloWorld line:', 'from idea to live, stop by stop; the bot rides it') +
+        row(sym('<path d="M2 17c5-1 8-7 13-9" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" opacity=".35"/><path d="M9 13.4c2.4-1.9 4-4.1 6-5.4" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" opacity=".8"/><rect x="15" y="4" width="7" height="7" rx="3.5" fill="currentColor"/>'), 'The HelloWorld line:', 'the bot flies from district to district, idea to live, with a light trail behind him') +
         row(sym('<ellipse cx="12" cy="19" rx="9" ry="3" fill="currentColor" opacity=".3"/><rect x="10" y="5" width="4" height="13" rx="2" fill="currentColor"/><circle cx="12" cy="5" r="2.4" fill="var(--accent)"/>'), 'Small islands:', 'the live sites, one for each address') +
         '<li class="hwc-keynote"><span>Districts: one for each category, told apart by place and name, not by colour. Violet means live, selected or now.</span></li>' +
         (GH.hasToken ? '' : '<li class="hwc-keynote"><span>Signed out, blocks show only what needs no files: the cover and the icon.</span></li>');
@@ -692,7 +695,7 @@
   }
 
   var TOURS = [
-    { id: 'line', label: 'Ride the HelloWorld line', text: 'From idea to live, from a seat on the line' },
+    { id: 'line', label: 'Fly the HelloWorld line', text: 'From idea to live, following the bot' },
     { id: 'demos', label: 'Demos to try', text: 'Each project with a demo, and its preview' },
     { id: 'sites', label: 'Live sites', text: 'Each live site, and what runs on it' },
     { id: 'sculptures', label: 'Statues and stones', text: 'Statues and pictures carved in stone, one after another' },

@@ -50,8 +50,11 @@
   background: var(--hwh-light), var(--hwh-ground);
   font-family: var(--font-sans, "Plus Jakarta Sans", system-ui, sans-serif);
   letter-spacing: var(--track-body, -0.01em);
-  padding: clamp(40px, 6vw, 96px) 0 clamp(48px, 6vw, 96px);
+  padding: clamp(28px, 3.4vw, 52px) 0 clamp(36px, 3.8vw, 56px);
   transition: background-color .25s ease, color .25s ease;
+  /* the City's building colours (assets/hwc-ui.js PALETTE.facades), for the skyline */
+  --hwh-f0: #f2a9b8; --hwh-f1: #f6be94; --hwh-f2: #f0d27e; --hwh-f3: #9fd8b4; --hwh-f4: #95c9ec;
+  --hwh-f5: #aab6f2; --hwh-f6: #c6b0f2; --hwh-f7: #ef9f8e; --hwh-f8: #b7d2a0; --hwh-f9: #8fd2ca;
 }
 :root[data-theme="dark"] .hwh {
   --hwh-ground: var(--void, #15121d);
@@ -68,6 +71,8 @@
   --hwh-lift: 0 30px 80px -40px rgba(0, 0, 0, .7);
   --hwh-rest: 0 6px 24px rgba(0, 0, 0, .25);
   --hwh-mascot-shadow: drop-shadow(0 18px 30px rgba(0, 0, 0, .45));
+  --hwh-f0: #9a5c70; --hwh-f1: #a06c50; --hwh-f2: #9c8648; --hwh-f3: #4f8a6a; --hwh-f4: #4d7ea4;
+  --hwh-f5: #5f6cab; --hwh-f6: #7a62ad; --hwh-f7: #a25e52; --hwh-f8: #6c8858; --hwh-f9: #4a8682;
 }
 
 /* ---------- the brand assets behind the hero ---------- */
@@ -90,8 +95,33 @@
   max-width: var(--maxw, 1520px); margin: 0 auto; padding: 0 var(--pad, clamp(20px, 4vw, 80px));
 }
 
-/* ---------- the words ---------- */
-.hwh-head { max-width: 880px; }
+/* ---------- the words, with the skyline beside them ---------- */
+.hwh-top { display: grid; gap: clamp(22px, 3vw, 44px); align-items: end; }
+@media (min-width: 960px) { .hwh-top.has-sky { grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); } }
+.hwh-head { max-width: 880px; min-width: 0; }
+.hwh-top.has-sky .hwh-title { font-size: clamp(38px, 4.6vw, 64px); }
+.hwh-top.has-sky .hwh-lead { margin-top: 14px; }
+
+/* The skyline: pill buildings on one ground line, coloured as in the City. */
+.hwh-sky { position: relative; min-width: 0; }
+.hwh-sky-svg { display: block; width: 100%; height: auto; max-height: 220px; overflow: visible; cursor: pointer; }
+.hwh-sky-ground { fill: var(--hwh-track); }
+.hwh-b { transform-box: fill-box; transform-origin: 50% 100%; transition: translate .55s cubic-bezier(.2, .8, .2, 1), opacity .45s ease; }
+.hwh-b-body { stroke: color-mix(in srgb, var(--text, #262430) 10%, transparent); stroke-width: 1; }
+.hwh-b.is-paused .hwh-b-body { fill: var(--mist, #e3e0ec); }
+:root[data-theme="dark"] .hwh-b.is-paused .hwh-b-body { fill: #3a3452; }
+.hwh-b-eye { fill: var(--violet, #6d44e0); }
+:root[data-theme="dark"] .hwh-b-eye { fill: var(--lilac, #a98bff); }
+.hwh-b.is-growing { animation: hwh-grow 1.1s cubic-bezier(.2, .8, .2, 1) backwards; animation-delay: calc(700ms + var(--d, 0ms)); }
+@keyframes hwh-grow { from { transform: scaleY(.02); opacity: 0; } 30% { opacity: 1; } }
+.hwh-sky.is-pointing .hwh-b { opacity: .5; }
+.hwh-sky.is-pointing .hwh-b:hover { opacity: 1; translate: 0 -7px; }
+.hwh-sky-cap {
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 16px;
+  margin: 12px 0 0; font-size: 14px; line-height: 1.4; color: var(--hwh-dim);
+}
+.hwh-sky-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hwh-sky.is-pointing .hwh-sky-t { color: var(--text, #262430); font-weight: 650; }
 .hwh-eyebrow {
   display: flex; width: fit-content; align-items: center; gap: 10px; margin: 0 0 16px;
   font-size: var(--fs-eyebrow, 14px); font-weight: 700; letter-spacing: .01em; line-height: 1.3;
@@ -126,7 +156,7 @@
 
 /* ---------- the cards' row ---------- */
 .hwh-deck {
-  position: relative; margin-top: clamp(64px, 7vw, 104px);
+  position: relative; margin-top: clamp(64px, 5.6vw, 84px);
   display: grid; gap: var(--hwh-gap); grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 @media (min-width: 1300px) { .hwh-deck { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
@@ -135,12 +165,12 @@
 /* A clickable card (the brand's .link-card): the whole card is one link, the eye pill top-right,
    a 4px lift, the border easing to violet and a wave of light running once round the border. */
 .hwh-card {
-  position: relative; overflow: hidden; min-width: 0; min-height: 318px;
+  position: relative; overflow: hidden; min-width: 0; min-height: 270px;
   display: flex; flex-direction: column; gap: 12px; padding: 24px;
   color: inherit; text-decoration: none;
   background: var(--card, #fff); border: 1px solid var(--line-role, rgba(38, 36, 48, .12)); border-radius: var(--r-card, 16px);
   box-shadow: var(--hwh-rest);
-  transition: transform .35s cubic-bezier(.2, .8, .2, 1), box-shadow .5s ease, border-color .6s ease, background-color .25s ease;
+  transition: transform .55s cubic-bezier(.2, .8, .2, 1), box-shadow .55s cubic-bezier(.2, .8, .2, 1), border-color .55s ease, background-color .25s ease;
 }
 .hwh-card::after {
   content: ""; position: absolute; top: 0; right: 0; width: 28%; max-width: 120px; aspect-ratio: 2 / 5;
@@ -150,6 +180,7 @@
 .hwh-card::before {
   content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1.5px;
   pointer-events: none; z-index: 2; opacity: 0;
+  --hwh-ring: 0deg; transition: opacity .6s ease, --hwh-ring 0s linear .6s;
   background: conic-gradient(from var(--hwh-ring), transparent 0deg, transparent 200deg,
     color-mix(in srgb, var(--accent, #6d44e0) 12%, transparent) 250deg,
     color-mix(in srgb, var(--accent, #6d44e0) 55%, transparent) 320deg,
@@ -162,8 +193,8 @@
   transform: translateY(-4px); box-shadow: var(--hwh-lift);
   border-color: color-mix(in srgb, var(--accent, #6d44e0) 40%, transparent);
 }
-.hwh-card:hover::before { animation: hwh-ring-wave 1.5s cubic-bezier(.25, .6, .3, 1) both; }
-@keyframes hwh-ring-wave { 0% { --hwh-ring: 0deg; opacity: 0; } 10% { opacity: 1; } 60% { opacity: .9; } 100% { --hwh-ring: 470deg; opacity: 0; } }
+/* The light runs once round and rests by the eye; leaving, it fades over the same time, then winds back unseen. */
+.hwh-card:hover::before { opacity: .8; --hwh-ring: 416deg; transition: opacity .4s ease, --hwh-ring 1.6s cubic-bezier(.25, .6, .3, 1); }
 .hwh-card:focus-visible, .hwh-quiet:focus-visible { outline: 2px solid var(--accent, #6d44e0); outline-offset: 2px; }
 
 .hwh-k {
@@ -171,7 +202,7 @@
   font-size: var(--fs-label, 11.5px); font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
   line-height: 1.3; color: var(--hwh-dim);
 }
-.hwh-fig { flex: 1 1 auto; display: flex; align-items: center; gap: 20px; min-height: 104px; }
+.hwh-fig { flex: 1 1 auto; display: flex; align-items: center; gap: 20px; min-height: 92px; }
 .hwh-num {
   font-size: clamp(44px, 3.9vw, 58px); font-weight: 800; letter-spacing: -0.035em; line-height: 1;
   font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--text, #262430); transition: color .4s ease;
@@ -244,8 +275,8 @@
 
 /* The bot, perched on the top edge of the cards' row. */
 .hwh-perch {
-  position: absolute; z-index: 3; right: 22px; top: 0; width: 136px; aspect-ratio: 1;
-  transform: translateY(-66%); pointer-events: none; filter: var(--hwh-mascot-shadow);
+  position: absolute; z-index: 3; right: 22px; top: 0; width: 112px; aspect-ratio: 1;
+  transform: translateY(-64%); pointer-events: none; filter: var(--hwh-mascot-shadow);
 }
 .hwh-bot { position: relative; width: 100%; aspect-ratio: 1; color: var(--hwh-bot-head); }
 .hwh-bot > svg.hwh-mark { position: absolute; left: 50%; top: 50%; width: 88%; height: auto; transform: translate(-50%, -50%); }
@@ -286,6 +317,8 @@
   .hwh-card:hover { transform: none; }
   .hwh-card::before { display: none; }
   .hwh-caret { animation: none; }
+  .hwh-b, .hwh-b.is-growing { animation: none; transition: none; }
+  .hwh-sky.is-pointing .hwh-b:hover { translate: none; }
   .hwh-src { opacity: 1; }
 }
 

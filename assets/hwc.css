@@ -252,7 +252,7 @@ a.hwc-pill:hover { border-color: var(--accent); color: var(--accent); }
 
 /* ---------- the bot over the City: the real mascot, one, flat, with its soft shadow ---------- */
 .hwc-bot {
-  position: absolute; left: 0; top: 0; z-index: 3; width: clamp(66px, 7.2vw, 108px); aspect-ratio: 1;
+  position: absolute; left: 0; top: 0; z-index: 3; width: clamp(40px, 3.6vw, 56px); aspect-ratio: 1;   /* about the size the line's car was (Bryan, 2026-11-26) */
   pointer-events: none; will-change: transform; filter: var(--shadow-mascot); transition: opacity .4s ease;
   --hwc-bot-head: var(--ink, #262430);
 }

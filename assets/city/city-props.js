@@ -14,7 +14,7 @@
      live eyes     a live project: the bot's two eyes on its roof
      lock          a private repo
      beacon        a live site, on its own small island
-     boat, cloud, bird, person, line car: life around the City
+     boat, cloud, bird, person: life around the City
 
    It looks like a calm architectural model: matte paper tones, soft edges,
    no glow. Colour is never baked in. Each part is painted with a TONE
@@ -331,19 +331,6 @@ export function billboard(texture, w, h, mat) {
   const pic = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: texture, toneMapped: false }));
   pic.position.set(0, 3.8 + h / 2, 0.0);
   grp.add(frame, pic);
-  return grp;
-}
-
-/* ---------------- the HelloWorld line's car ---------------- */
-/* A pill-shaped cabin hanging from the line. The passenger is the real bot, drawn by the page over
-   the canvas, never a model of him. */
-export function lineCar(mat) {
-  const cabin = pill(0.6, 2.2, 0, 0, 0, 18).rotateZ(Math.PI / 2).translate(1.1, -0.2, 0);
-  const band = pill(0.62, 1.7, 0, 0, 0, 18).rotateZ(Math.PI / 2).scale(1, 0.32, 1.02).translate(0.85, 0.02, 0);
-  const g = merge([paint(cabin, 'body'), paint(band, 'ink', 1.5), paint(pill(0.05, 1.5, 0.3, 0, 0, 6), 'ink', 1.4)]);
-  const m = new THREE.Mesh(g, mat);
-  m.castShadow = true;
-  const grp = new THREE.Group(); grp.add(m);
   return grp;
 }
 

@@ -239,7 +239,7 @@ h1.hwx-title { font-size: var(--fs-h1); letter-spacing: var(--track-display); li
 .hwx-card, .hwx-door, .hwx-site, .hwx-citycard {
   position: relative; display: flex; flex-direction: column; min-width: 0; overflow: hidden; isolation: isolate;
   color: inherit; text-decoration: none; background: var(--card); border: 1px solid var(--line-role); border-radius: var(--r-card);
-  transition: transform .35s var(--hw-ease), box-shadow .5s ease, border-color .6s ease;
+  transition: transform .55s var(--hw-ease), box-shadow .55s var(--hw-ease), border-color .55s ease;
 }
 .hwx-card::after, .hwx-door::after, .hwx-site::after, .hwx-citycard::after {
   content: ""; position: absolute; top: 0; right: 0; width: 26%; max-width: 110px; aspect-ratio: 2 / 5; border-radius: var(--r-pill);
@@ -247,16 +247,18 @@ h1.hwx-title { font-size: var(--fs-h1); letter-spacing: var(--track-display); li
 }
 .hwx-card::before, .hwx-door::before, .hwx-site::before, .hwx-citycard::before {
   content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1.5px; pointer-events: none; z-index: 4; opacity: 0;
+  --ring: 0deg; transition: opacity .6s ease, --ring 0s linear .6s;
   background: conic-gradient(from var(--ring), transparent 0deg, transparent 200deg, color-mix(in srgb, var(--accent) 12%, transparent) 250deg, color-mix(in srgb, var(--accent) 55%, transparent) 320deg, color-mix(in srgb, var(--accent) 90%, #fff) 346deg, #fff 352deg, transparent 360deg);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude;
 }
 .hwx-card:hover, .hwx-door:hover, .hwx-site:hover, .hwx-citycard:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--accent) 40%, transparent); box-shadow: var(--shadow-lg); color: inherit; }
-.hwx-card:hover::before, .hwx-door:hover::before, .hwx-site:hover::before, .hwx-citycard:hover::before { animation: hw-ring 1.5s var(--ease-ring) both; }
-@keyframes hw-ring { 0% { --ring: 0deg; opacity: 0; } 10% { opacity: 1; } 60% { opacity: .9; } 100% { --ring: 470deg; opacity: 0; } }
+/* The light runs once round the border and comes to rest by the eye, top right; leaving, it fades
+   out over the same time instead of vanishing, and only then winds back (unseen). */
+.hwx-card:hover::before, .hwx-door:hover::before, .hwx-site:hover::before, .hwx-citycard:hover::before { opacity: .8; --ring: 416deg; transition: opacity .4s ease, --ring 1.6s var(--ease-ring); }
 .hwx-card:focus-visible, .hwx-door:focus-visible, .hwx-site:focus-visible, .hwx-citycard:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: var(--r-card); }
 .hwx-card-media { position: relative; display: block; aspect-ratio: 16 / 10; background: var(--surface-2); border-bottom: 1px solid var(--line-role); overflow: hidden; flex: none; }
 .hwx-card-media > svg, .hwx-card-media > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.hwx-card-media > img { opacity: 0; transition: opacity .5s ease, transform .6s var(--hw-ease); }
+.hwx-card-media > img { opacity: 0; transition: opacity .6s ease, transform .8s var(--hw-ease); }
 .hwx-card-media > img.is-on { opacity: 1; }
 .hwx-card:hover .hwx-card-media > img.is-on { transform: scale(1.03); }
 .hwx-card-body { display: flex; flex-direction: column; gap: 9px; padding: 18px 20px 18px; flex: 1; min-width: 0; }
@@ -292,7 +294,7 @@ a:hover .act .go { gap: 10px; }
 /* rows (smaller projects, long lists) */
 .hwx-rows { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); }
 .hwx-rows.one { grid-template-columns: 1fr; }
-.hwx-row { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line-role); background: var(--card); color: inherit; text-decoration: none; min-width: 0; transition: border-color .6s ease, transform .35s var(--hw-ease), box-shadow .5s ease; }
+.hwx-row { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line-role); background: var(--card); color: inherit; text-decoration: none; min-width: 0; transition: border-color .5s ease, transform .5s var(--hw-ease), box-shadow .5s var(--hw-ease); }
 .hwx-row:hover { border-color: color-mix(in srgb, var(--accent) 40%, transparent); transform: translateY(-2px); box-shadow: var(--shadow); color: inherit; }
 .hwx-row-ico { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 10px; background: color-mix(in srgb, var(--accent) 11%, transparent); color: var(--accent); }
 .hwx-row-ico svg { width: 18px; height: 18px; }
@@ -822,9 +824,9 @@ dialog.hw-full::backdrop { background: var(--surface); }
 .hw-ftr a { color: var(--text-2); }
 .hw-ftr .grow { flex: 1; }
 
-/* scroll reveal: things below the fold rise in as they arrive (nothing is hidden beforehand) */
-.hw-rv-in { animation: hw-rise .75s var(--hw-ease) both; animation-delay: var(--rv-d, 0ms); }
-@keyframes hw-rise { from { opacity: 0; transform: translateY(18px); } }
+/* scroll reveal (hub-shell.js observeReveals): below the fold, waiting to rise in. The rise itself is
+   a Web Animation on opacity and `translate`, so it never holds the card's `transform`. */
+.hw-rv-wait { opacity: 0; translate: 0 28px; }
 
 /* ---------------- Reduced motion: final states, nothing moves ---------------- */
 @media (prefers-reduced-motion: reduce) {

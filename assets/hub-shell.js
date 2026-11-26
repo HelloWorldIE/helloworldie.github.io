@@ -304,26 +304,36 @@
     }, function () { img.remove(); });
   }
 
-  /* ---------- scroll reveal: content ships in its final state and rises in as it arrives ---------- */
+  /* ---------- scroll reveal ----------
+     Anything below the fold waits, already hidden, before it reaches the screen, so nothing shows and
+     then blinks out (the old flash). As it arrives it rises in softly, a few at a time in reading
+     order. The rise runs on the `translate` property through the Web Animations API and holds nothing
+     once it ends, so a card's own `transform` stays free and its hover lift eases in and out on its
+     own curve. Things already on screen when a view draws arrive with the view. Reduced motion,
+     automated browsers and old browsers: everything is simply there. */
   var revealObs = null;
+  function revealDone(el) { el.classList.remove('hw-rv-wait'); el.classList.add('hw-rv-done'); }
+  function rise(el, k) {
+    var delay = Math.min(k, 7) * 75;
+    try {
+      el.animate([{ opacity: 0, translate: '0 28px' }, { opacity: 1, translate: '0 0' }],
+        { duration: 950, delay: delay, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' });
+    } catch (e) {}
+    revealDone(el);                 // the animation's backwards fill keeps it hidden through the delay
+  }
   function observeReveals(scope) {
-    if (reduced() || automated() || !('IntersectionObserver' in window)) return;
-    if (!revealObs) {
-      revealObs = new IntersectionObserver(function (entries) {
-        var k = 0;
-        entries.forEach(function (en) {
-          if (!en.isIntersecting) return;
-          revealObs.unobserve(en.target);
-          var el = en.target;
-          el.style.setProperty('--rv-d', Math.round(k++ * 70 + Math.random() * 60) + 'ms');
-          el.classList.add('hw-rv-in');
-        });
-      }, { threshold: 0, rootMargin: '0px 0px -6% 0px' });
-    }
+    var all = $$('.hw-rv:not(.hw-rv-done)', scope || document);
+    if (reduced() || automated() || !('IntersectionObserver' in window) || !Element.prototype.animate) { all.forEach(revealDone); return; }
+    if (revealObs) revealObs.disconnect();
+    revealObs = new IntersectionObserver(function (entries) {
+      var come = entries.filter(function (en) { return en.isIntersecting; }).map(function (en) { return en.target; });
+      come.sort(function (a, b) { var ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect(); return (ra.top - rb.top) || (ra.left - rb.left); });
+      come.forEach(function (el, k) { revealObs.unobserve(el); rise(el, k); });
+    }, { threshold: 0.06, rootMargin: '0px 0px -3% 0px' });
     var vh = window.innerHeight;
-    $$('.hw-rv:not(.hw-rv-in)', scope || document).forEach(function (el) {
-      // Things already on screen when the view draws stay put: the view itself arrives as one.
-      if (el.getBoundingClientRect().top < vh) return;
+    all.forEach(function (el) {
+      if (el.getBoundingClientRect().top < vh * 0.97) { revealDone(el); return; }
+      el.classList.add('hw-rv-wait');
       revealObs.observe(el);
     });
   }

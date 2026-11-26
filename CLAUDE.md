@@ -22,7 +22,9 @@ every commit (it checks the deny list kept outside every repo).
 default and dark as a full peer (role tokens in `assets/tokens.css`; the switch writes
 `localStorage['hw_theme']` and fires `hw-theme` on `document`); one accent, Signal Violet
 `#6d44e0` (Bright Violet `#a98bff` on dark), about 10 to 13% of a view; categories and stages told
-apart by place and words, never hue; Plus Jakarta Sans only (self-hosted in `assets/fonts/`), no
+apart by place and words, never hue; the City's buildings (and the header's skyline) each have a soft
+colour of their own (Bryan, 2026-11-26; `PALETTE.facades` in `hwc-ui.js`, the same ten tones as
+`--hwh-f0` to `--hwh-f9` in `hero.css`, picked by the City's hash of the repo name); Plus Jakarta Sans only (self-hosted in `assets/fonts/`), no
 monospace except a file's text in the code browser; no glass, blur, glow, neon, particles, planets
 or spinners; motion "organic, natural, living" (the `--ease-*` tokens), with full reduced-motion
 support; the eye pill (2:5 capsule) as the only shape; the bot is the real mascot engine, alive and
@@ -41,9 +43,9 @@ meaningful, one per view, never 3D; a rounded element has a full border or none.
 | `assets/hwx-data.js` | The adapter the views use: `HWX.info`, `list`, `index`, `recent`, `image`, `md`, `level`, `onRepos`, `whenDetails`. | `HWX` |
 | `assets/hub-shell.js` | Shell services: theme, sign-in dialog (GitHub App and token), toasts, copy, the sealed demo viewer with its confirm screen, lightbox, guide viewer, `HWLoad` and the bot loader, the capsule curtain. | `HWShell`, `HWLoad` |
 | `assets/hwx-views.js`, `assets/hwx.css` | The router and every view (below), cards, project pages, detail levels, search. `hwx.css` also holds the base classes (`.btn`, `.field`, `.eyebrow`, `.cat`, `.badge`, `.decor`). | `HWX.render`, `HWX.go` |
-| `assets/hero.js`, `assets/hero.css` | The header: title and four animated cards (Projects, Last changes, Latest update, Rules passing) with the bot narrating the load; also full-window mode for `/dashboard/`. | `HWHero` |
+| `assets/hero.js`, `assets/hero.css` | The header: title, the skyline (every project that is not retired as a pill building in its City colour, the live ones with the bot's eyes; pointing names it, selecting opens it) and four animated cards (Projects, Last changes, Latest update, Rules passing) with the bot narrating the load; also full-window mode for `/dashboard/` (no skyline). | `HWHero` |
 | `assets/hwc-ui.js`, `assets/hwc.css` | The City's page side: the `#/city` view, panels, key, search, tours, Projects list, the project slide and the Discover card. Loads the City module on demand. | `HWX.views.city`, `HWX.citySlide`, `HWX.citySearch`, `HWX.cityPreview` |
-| `assets/city/hwc-city.js`, `city-architecture.js`, `city-plan.js`, `city-props.js` | The City (ES modules, three.js): districts, buildings, file blocks, props, tours, walk mode, the line car. Colours only through the palette handler from `hwc-ui.js`. Never touches the token. | |
+| `assets/city/hwc-city.js`, `city-architecture.js`, `city-plan.js`, `city-props.js` | The City (ES modules, three.js): districts, buildings, file blocks, props, tours, walk mode, the HelloWorld line (no cable or car: the bot flies it, and `_stepTrail` draws his fading light trail from the route itself, so it is smooth at any frame rate). Colours only through the palette handler from `hwc-ui.js`. Never touches the token. | |
 | `assets/mascot/` | The bot's animation engine (HelloWorld's own; needs `window.gsap`). Read its `README.md` and `AGENTS.md` before using it. | |
 | `assets/brand/`, `assets/fonts/`, `assets/bot.svg` | Bot marks and silhouette, app icons, Plus Jakarta Sans, the favicon. | |
 | `dashboard/index.html`, `assets/dashboard-page.js` | The one-screen dashboard (`HWHero` in full mode) with Live, Demo (`?demo`) and Big demo (`?big`) data. | |
@@ -115,5 +117,14 @@ out of every list; `same_as` hides a second copy. A project without pictures get
   stacking context: keep that id.
 - Horizontal scrollers need `overflow-y: hidden`, or the mouse wheel stops scrolling the page.
 - The header bot and the shell's loader take turns, so one bot talks at a time.
+- **Scroll reveal and hover never share a property.** The reveal (`observeReveals` in
+  `hub-shell.js`) hides what is below the fold before it arrives (`.hw-rv-wait`) and rises it in with
+  a Web Animation on `opacity` and `translate`, holding nothing afterwards; hover lifts use
+  `transform` with symmetric transitions, and the border light fades out on leave. A CSS animation
+  with `fill: both` on `transform` once froze the hover lift (it jumped) and showed cards, hid them
+  and faded them in again (the flash): do not bring that back.
+- Headless Chrome reports `navigator.webdriver`, which turns the reveal, the curtain and the hero's
+  motion off; to test them, hide it with `Object.defineProperty(Navigator.prototype, 'webdriver', ...)`
+  before the page loads.
 - three.js logs an error when a headless browser refuses pointer lock (walk mode); it is caught and
   the keys still work.
