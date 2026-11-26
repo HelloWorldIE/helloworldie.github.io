@@ -30,7 +30,7 @@
   var GH = window.HWGH, CFG = window.HW_CONFIG || {};
   if (!GH) return;
   var OWNER = CFG.account || GH.account;
-  var CITY_URL = 'assets/city/hwc-city.js?v=4';
+  var CITY_URL = 'assets/city/hwc-city.js?v=5';
 
   /* ---------------- small helpers ---------------- */
   var own = function (o, k) { return o != null && typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k); };

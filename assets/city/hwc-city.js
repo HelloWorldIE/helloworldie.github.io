@@ -1051,20 +1051,17 @@ export class City {
   _buildLine() {
     const stops = this.hoods.map((h) => this.districts.find((d) => d.hood && d.hood.id === h.id)).filter((d) => d && d.plaza);
     if (stops.length < 2) return;
-    const pts = [];
-    stops.forEach((d, i) => {
-      pts.push(new THREE.Vector3(d.plaza.x, d.monumentTop + 4.5, d.plaza.z));
-      if (i < stops.length - 1) {
-        const n = stops[i + 1];
-        pts.push(new THREE.Vector3((d.plaza.x + n.plaza.x) / 2, MAX_H * 0.8, (d.plaza.z + n.plaza.z) / 2));
-      }
-    });
+    /* Each leg rises over the roofs on its way (Bryan: "a higher arc so he does not fly through
+       buildings"): points along it sit above the tallest roof near them, lifted into an arc. */
+    const stopPts = stops.map((d) => new THREE.Vector3(d.plaza.x, Math.max(d.monumentTop + 4.5, this._roofAt(d.plaza.x, d.plaza.z, 2) + 3), d.plaza.z));
+    const pts = [stopPts[0]];
+    for (let i = 1; i < stopPts.length; i++) { pts.push(...this._arcPoints(stopPts[i - 1], stopPts[i], 10)); pts.push(stopPts[i]); }
     /* No cable and no car (Bryan, 2026-11-26): the bot himself flies the route, leaving a light
        trail that fades behind him. The curve is his path; `car` is only the point he is at. */
     const curve = new THREE.CatmullRomCurve3(pts, false, 'centripetal');
     const NS = 900, samples = [];
     for (let i = 0; i <= NS; i++) samples.push(curve.getPointAt(i / NS));
-    const stopU = pts.filter((_, i) => i % 2 === 0).map((p) => {
+    const stopU = stopPts.map((p) => {
       let bi = 0, bd = Infinity;
       samples.forEach((q, i) => { const dd = q.distanceToSquared(p); if (dd < bd) { bd = dd; bi = i; } });
       return bi / NS;
@@ -1086,7 +1083,7 @@ export class City {
      faces where he is going, leans into each push and bobs when he rests. ---- */
   _botGeometry() {
     if (this._botGeo) return this._botGeo;
-    const C0 = 153, DEPTH = 84, BEV = 14;
+    const C0 = 153, DEPTH = 28, BEV = 5;   /* front to back: a third of the first model (Bryan) */
     const flip = (pts, dy) => pts.map((q) => new THREE.Vector2(q.x - C0, C0 - (q.y + dy)));
     const data = new SVGLoader().parse('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 306 306"><path d="' + helloworld.head.paths[0].d + '"/></svg>');
     const raw = [];
@@ -1100,10 +1097,10 @@ export class City {
     }
     const ring = new THREE.Shape(flip(outer, 13.2));
     holes.forEach((h) => ring.holes.push(new THREE.Path(flip(h, 13.2))));
-    const head = new THREE.ExtrudeGeometry(ring, { depth: DEPTH, bevelEnabled: true, bevelThickness: BEV, bevelSize: 8, bevelSegments: 5, curveSegments: 8 });
+    const head = new THREE.ExtrudeGeometry(ring, { depth: DEPTH, bevelEnabled: true, bevelThickness: BEV, bevelSize: 5, bevelSegments: 4, curveSegments: 8 });
     const face = holes.length ? new THREE.ExtrudeGeometry(new THREE.Shape(flip(holes[0], 13.2)), { depth: DEPTH * 0.76, bevelEnabled: false }) : null;
     if (face) face.translate(0, 0, DEPTH * 0.12);
-    const eye = (x) => new THREE.CapsuleGeometry(11, 36, 6, 14).scale(1, 1, 0.55).translate(x - C0, C0 - 154.5, DEPTH * 0.88 + 3);
+    const eye = (x) => new THREE.CapsuleGeometry(11, 36, 6, 14).scale(1, 1, 0.3).translate(x - C0, C0 - 154.5, DEPTH * 0.88 + 2);
     const eyes = mergeGeometries([eye(306 * 0.382), eye(306 * 0.618)]);
     [head, face, eyes].forEach((g) => { if (!g) return; g.translate(0, 0, -DEPTH / 2); g.scale(1 / 306, 1 / 306, 1 / 306); g.computeVertexNormals(); g.userData.keep = true; });
     this._botGeo = { head, face, eyes };
@@ -1130,13 +1127,40 @@ export class City {
     return { t0: now, ms: tb.D * 1000, sAt: tb.sAt, posAt, kind };
   }
   _swimTo(target, now, kind) {
-    const from = this.bot3.position.clone(), to = target.clone(), dist = from.distanceTo(to);
-    const mid = from.clone().lerp(to, 0.5); mid.y = Math.max(from.y, to.y) + Math.max(4, dist * 0.22);
-    const curve = new THREE.QuadraticBezierCurve3(from, mid, to);
-    this.swim = this._plan(dist, now, (sv) => curve.getPoint(clamp(sv, -0.05, 1)), kind);
+    const from = this.bot3.position.clone(), to = target.clone();
+    const curve = new THREE.CatmullRomCurve3([from, ...this._arcPoints(from, to, 6), to], false, 'centripetal');
+    this.swim = this._plan(curve.getLength(), now, (sv) => curve.getPointAt(clamp(sv, 0, 1)), kind);
     this.botTo = to;
   }
   _lineHome() { const c = this.cable; return c.curve.getPointAt(clamp(c.stopU[c.i], 0, 1)); }
+  /* The highest roof near a point on the ground, with room for crowns, caps and antennas. */
+  _roofAt(x, z, reach = 6) {
+    let top = BASE;
+    for (const t of this.towers) {
+      const r = (t.w || 4) * 0.62 + reach, dx = t.x - x, dz = t.z - z;
+      if (dx * dx + dz * dz < r * r) top = Math.max(top, BASE + (t.h || 0) + (t.pointed ? 6 : 3.5));
+    }
+    return top;
+  }
+  /* Points between a and b that clear every roof on the way by a margin, lifted into an arc that is
+     highest midway; smoothed so the climb and the descent stay gentle. Ends not included. */
+  _arcPoints(a, b, n = 8) {
+    const d = Math.hypot(b.x - a.x, b.z - a.z), lift = Math.max(4, d * 0.12), ys = [];
+    for (let j = 0; j <= n; j++) {
+      const k = j / n, x = a.x + (b.x - a.x) * k, z = a.z + (b.z - a.z) * k;
+      const floor = j === 0 ? a.y : j === n ? b.y : Math.max(a.y + (b.y - a.y) * k, this._roofAt(x, z) + 4);
+      ys.push(floor);
+    }
+    for (let pass = 0; pass < 3; pass++) {                    /* nothing lower than its neighbours' average: no dips between roofs */
+      for (let j = 1; j < n; j++) ys[j] = Math.max(ys[j], (ys[j - 1] + ys[j + 1]) / 2);
+    }
+    const out = [];
+    for (let j = 1; j < n; j++) {
+      const k = j / n;
+      out.push(new THREE.Vector3(a.x + (b.x - a.x) * k, ys[j] + Math.sin(Math.PI * k) * lift, a.z + (b.z - a.z) * k));
+    }
+    return out;
+  }
   /* What he should go and look at: the selected building, district or thing, or nothing. He waits
      beside it (to the camera's right, so the preview rising over a demo building never hides him)
      and looks at it. The key is what was chosen, so a camera move does not send him off again. */
