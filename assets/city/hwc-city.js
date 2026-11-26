@@ -243,6 +243,36 @@ function strideTable(n) {
   return { D, sAt(k) { const f = clamp(k, 0, 1) * N, i = Math.floor(f), j = Math.min(N, i + 1); return (cum[i] + (cum[j] - cum[i]) * (f - i)) / total; } };
 }
 
+/* Keyframes: [[seconds, value, ease of the segment that ends here], ...]; eases from the mascot engine. */
+const EASE = {
+  in: (k) => k * k, out: (k) => 1 - (1 - k) * (1 - k), io: (k) => (k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2),
+  sine: (k) => 0.5 - 0.5 * Math.cos(Math.PI * k), back: (k) => { const c = 2.2; return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2); }
+};
+function keyAt(f, t) {
+  if (t <= f[0][0]) return f[0][1];
+  for (let i = 1; i < f.length; i++) {
+    if (t <= f[i][0]) { const k = (t - f[i - 1][0]) / Math.max(1e-6, f[i][0] - f[i - 1][0]); return f[i - 1][1] + (f[i][1] - f[i - 1][1]) * (EASE[f[i][2] || 'sine'])(k); }
+  }
+  return f[f.length - 1][1];
+}
+/* His routines at rest, from the mascot engine's expressions. Eyes in head widths, hops in body widths, turns in radians. */
+const BOT_ACTS = {
+  look:    { yaw: [[0, 0], [0.7, -0.55, 'sine'], [1.4, -0.55], [2.3, 0.55, 'sine'], [2.8, 0.55], [3.5, 0, 'sine']],
+             eyeX: [[0, 0], [0.4, -0.04, 'out'], [1.4, -0.04], [1.8, 0.04, 'out'], [2.8, 0.04], [3.3, 0, 'sine']] },
+  tilt:    { roll: [[0, 0], [0.8, 0.1, 'io'], [2.2, 0.1], [3.0, 0, 'io']], eyeY: [[0, 0], [0.5, 0.012, 'out'], [2.2, 0.012], [3.0, 0, 'io']] },
+  bored:   { hop: [[0, 0], [0.9, -0.05, 'io'], [1.6, -0.05], [2.6, 0, 'io']], roll: [[0, 0], [0.9, -0.035, 'io'], [1.6, -0.035], [2.6, 0, 'io']],
+             eyeSY: [[0, 1], [0.9, 0.7, 'io'], [1.6, 0.7], [2.6, 1, 'io']], eyeY: [[0, 0], [0.9, -0.02, 'io'], [1.6, -0.02], [2.6, 0, 'io']] },
+  happy:   { eyeSY: [[0, 1], [0.34, 0.62, 'back'], [1.2, 0.62], [1.6, 1, 'sine']], eyeY: [[0, 0], [0.34, 0.02, 'back'], [1.2, 0.02], [1.6, 0, 'sine']],
+             hop: [[0, 0], [0.25, 0.12, 'out'], [0.5, 0, 'in'], [0.62, 0.03, 'out'], [0.74, 0, 'in']] },
+  nod:     { pitch: [[0, 0], [0.18, 0.2, 'out'], [0.36, 0, 'io'], [0.54, 0.15, 'out'], [0.78, 0, 'io']] },
+  wink:    { eyeSYL: [[0, 1], [0.1, 0.12, 'in'], [0.45, 0.12], [0.6, 1, 'out']], eyeSYR: [[0, 1], [0.2, 0.8, 'out'], [0.45, 0.8], [0.6, 1, 'out']],
+             roll: [[0, 0], [0.2, 0.07, 'out'], [0.5, 0.07], [0.75, 0, 'io']] },
+  stretch: { sy: [[0, 1], [0.5, 1.07, 'out'], [0.85, 1.07], [1.35, 1, 'back']], sx: [[0, 1], [0.5, 0.97, 'out'], [0.85, 0.97], [1.35, 1, 'back']],
+             eyeSY: [[0, 1], [0.5, 0.5, 'io'], [0.85, 0.5], [1.35, 1, 'io']] },
+  spin:    { sy: [[0, 1], [0.14, 0.94, 'in'], [0.34, 1.04, 'out'], [0.55, 1, 'io']], hop: [[0, 0], [0.34, 0.1, 'out'], [0.95, 0.1], [1.25, 0, 'in']],
+             yaw: [[0, 0], [0.25, 0], [1.25, Math.PI * 2, 'io']] }
+};
+
 /* The palette, as colours and numbers, so it can be eased from one theme to the other. */
 const FACADE_FB = ['#f2a9b8', '#f6be94', '#f0d27e', '#9fd8b4', '#95c9ec', '#aab6f2', '#c6b0f2', '#ef9f8e', '#b7d2a0', '#8fd2ca'];
 /* A project's own colour: the same in every view, picked from its name. */
@@ -1100,10 +1130,11 @@ export class City {
     const head = new THREE.ExtrudeGeometry(ring, { depth: DEPTH, bevelEnabled: true, bevelThickness: BEV, bevelSize: 5, bevelSegments: 4, curveSegments: 8 });
     const face = holes.length ? new THREE.ExtrudeGeometry(new THREE.Shape(flip(holes[0], 13.2)), { depth: DEPTH * 0.76, bevelEnabled: false }) : null;
     if (face) face.translate(0, 0, DEPTH * 0.12);
-    const eye = (x) => new THREE.CapsuleGeometry(11, 36, 6, 14).scale(1, 1, 0.3).translate(x - C0, C0 - 154.5, DEPTH * 0.88 + 2);
-    const eyes = mergeGeometries([eye(306 * 0.382), eye(306 * 0.618)]);
-    [head, face, eyes].forEach((g) => { if (!g) return; g.translate(0, 0, -DEPTH / 2); g.scale(1 / 306, 1 / 306, 1 / 306); g.computeVertexNormals(); g.userData.keep = true; });
-    this._botGeo = { head, face, eyes };
+    /* one eye, centred on itself so it blinks and glances about its own middle; placed in _makeBot */
+    const eye = new THREE.CapsuleGeometry(11, 36, 6, 14).scale(1, 1, 0.3).translate(0, 0, DEPTH * 0.88 + 2);
+    [head, face, eye].forEach((g) => { if (!g) return; g.translate(0, 0, -DEPTH / 2); g.scale(1 / 306, 1 / 306, 1 / 306); g.computeVertexNormals(); g.userData.keep = true; });
+    const at = (x) => ({ x: (x - C0) / 306, y: (C0 - 154.5) / 306 });
+    this._botGeo = { head, face, eye, eyeAt: [at(306 * 0.382), at(306 * 0.618)] };
     return this._botGeo;
   }
   _makeBot() {
@@ -1115,11 +1146,79 @@ export class City {
     const head = new THREE.Mesh(G.head, this.botMats.head); head.castShadow = true;
     body.add(head);
     if (G.face) body.add(new THREE.Mesh(G.face, this.botMats.face));
-    body.add(new THREE.Mesh(G.eyes, this.botMats.eyes));
+    const eyes = G.eyeAt.map((q) => { const m = new THREE.Mesh(G.eye, this.botMats.eyes); m.position.set(q.x, q.y, 0); body.add(m); return m; });
     body.scale.setScalar(BOT_W);
     grp.add(body);
-    grp.userData = { body, yaw: 0, pitch: 0, last: null };
+    grp.userData = { body, eyes, eyeAt: G.eyeAt, yaw: 0, pitch: 0, last: null,
+      acts: [], arousal: 0, nextBlink: 0, nextIdle: 0, nextDart: 0, restSince: 0, lastIdle: '', wasMoving: false };
     return grp;
+  }
+  /* ---- his life (Bryan, 2026-11-26: "the lifelike blinking, some kind of random animations when
+     it rests"). The mascot engine's own behaviours (assets/mascot/life.js, expressions.js), done
+     in 3D: an irregular human blink (more often when he is excited, sometimes a double blink),
+     breathing and small eye glances at rest, and every 4 to 8 s at rest one of his routines: look
+     around, a curious tilt, the bored squint, a happy squint with a hop, a nod, a wink, a sleepy
+     stretch or a spin. Arriving at something you selected, he is pleased to find it. Everything
+     happens in place: no squash or stretch while he travels. Each act is a few keyframes in
+     seconds that add to his pose for as long as it runs. ---- */
+  _botAct(name, now, frames, arouse) {
+    const u = this.bot3.userData;
+    const len = Math.max(...Object.values(frames).map((f) => f[f.length - 1][0]));
+    u.acts = u.acts.filter((a) => a.name !== name);
+    u.acts.push({ name, t0: now, ms: len * 1000, frames });
+    if (arouse) u.arousal = clamp(u.arousal + arouse, 0, 2.6);
+  }
+  _botLife(now, moving) {
+    const u = this.bot3.userData, R = Math.random;
+    if (REDUCED.matches) { u.acts = []; return; }
+    /* the blink: exponential gaps around 5.4 s, shorter when excited, never under 0.65 s */
+    if (now >= u.nextBlink) {
+      if (u.nextBlink) {
+        const dbl = R() < 0.1 + 0.2 * Math.min(1, u.arousal);
+        this._botAct('blink', now, { eyeSY: dbl
+          ? [[0, 1], [0.08, 0.12, 'in'], [0.2, 1, 'out'], [0.27, 1], [0.35, 0.12, 'in'], [0.47, 1, 'out']]
+          : [[0, 1], [0.09, 0.12, 'io'], [0.18, 1, 'io']] });
+        u.arousal *= 0.8;
+      }
+      const mean = 5400 / (1 + u.arousal * 0.9), j = -Math.log(1 - R());
+      u.nextBlink = now + Math.max(650, mean * (0.5 + 0.85 * j));
+    }
+    if (moving) { u.restSince = 0; u.wasMoving = true; return; }
+    if (!u.restSince) {
+      u.restSince = now; u.nextIdle = now + 1800 + R() * 2200; u.nextDart = now + 900 + R() * 1200;
+      if (u.wasMoving && this.botMode === 'focus') this._botAct('found', now, BOT_ACTS.happy, 1.1);   /* he found what you chose */
+      u.wasMoving = false;
+    }
+    const busy = u.acts.some((a) => a.name !== 'blink' && a.name !== 'dart');
+    if (!busy && now >= u.nextDart) {                                        /* a glance */
+      const dx = (R() < 0.5 ? -1 : 1) * (0.025 + R() * 0.02), dy = (R() - 0.5) * 0.02, hold = 0.5 + R() * 0.9;
+      this._botAct('dart', now, { eyeX: [[0, 0], [0.22, dx, 'out'], [0.22 + hold, dx], [0.6 + hold, 0, 'io']], eyeY: [[0, 0], [0.22, dy, 'out'], [0.22 + hold, dy], [0.6 + hold, 0, 'io']] });
+      u.nextDart = now + 2200 + R() * 3200;
+    }
+    if (!busy && now >= u.nextIdle) {                                        /* one of his routines */
+      const pool = this.botMode === 'focus'
+        ? [['tilt', 3], ['nod', 2], ['happy', 2], ['wink', 1.2], ['look', 1]]
+        : [['look', 3], ['tilt', 2], ['bored', 2], ['happy', 1.4], ['nod', 1], ['stretch', 1.2], ['wink', 1], ['spin', 0.8]];
+      const choices = pool.filter((c) => c[0] !== u.lastIdle), sum = choices.reduce((a, c) => a + c[1], 0);
+      let r = R() * sum, pick = choices[0][0];
+      for (const c of choices) { if ((r -= c[1]) <= 0) { pick = c[0]; break; } }
+      u.lastIdle = pick;
+      this._botAct(pick, now, BOT_ACTS[pick], { spin: 1.2, happy: 0.7, wink: 0.7, nod: 0.4, tilt: 0.4 }[pick] || 0);
+      u.nextIdle = now + 3800 + R() * 4200;
+    }
+  }
+  /* His pose this frame: the sum of the acts that are running. */
+  _botPose(now) {
+    const u = this.bot3.userData, pose = { eyeSY: 1, eyeSYL: 1, eyeSYR: 1, eyeX: 0, eyeY: 0, yaw: 0, roll: 0, pitch: 0, hop: 0, sx: 1, sy: 1 };
+    u.acts = u.acts.filter((a) => now - a.t0 < a.ms);
+    for (const a of u.acts) {
+      const t = (now - a.t0) / 1000;
+      for (const key in a.frames) {
+        const v = keyAt(a.frames[key], t);
+        if (key === 'eyeSY' || key === 'eyeSYL' || key === 'eyeSYR' || key === 'sx' || key === 'sy') pose[key] *= v; else pose[key] += v;
+      }
+    }
+    return pose;
   }
   /* A journey of length L (world units) starting now: how far along it he is at each moment. */
   _plan(L, now, posAt, kind) {
@@ -1210,8 +1309,16 @@ export class City {
     const pitchWant = moving ? clamp(speed * 0.022, 0, 0.32) : (this.botMode === 'focus' ? 0.22 : 0);   /* leans into the push; looks down at what he came to see */
     u.pitch += (pitchWant - u.pitch) * ease;
     const bob = REDUCED.matches ? 0 : Math.sin(now * 0.0017) * (moving ? 0.08 : 0.22) * BOT_W / 4;
-    B.position.set(P.x, P.y + bob, P.z);
-    B.rotation.set(u.pitch, u.yaw, -dy * 0.25 * (moving ? 1 : 0), 'YXZ');
+    this._botLife(now, moving);
+    const pose = this._botPose(now);
+    const breath = REDUCED.matches ? 1 : 1 + Math.sin(now * (Math.PI * 2 / 3000)) * (moving ? 0.004 : 0.014);   /* in place only */
+    B.position.set(P.x, P.y + bob + pose.hop * BOT_W, P.z);
+    B.rotation.set(u.pitch + pose.pitch, u.yaw + pose.yaw, -dy * 0.25 * (moving ? 1 : 0) + pose.roll, 'YXZ');
+    u.body.scale.set(BOT_W * breath * pose.sx, BOT_W * breath * pose.sy, BOT_W * breath);
+    u.eyes.forEach((m, i) => {
+      m.position.set(u.eyeAt[i].x + pose.eyeX, u.eyeAt[i].y + pose.eyeY, 0);
+      m.scale.y = pose.eyeSY * (i === 0 ? pose.eyeSYL : pose.eyeSYR);
+    });
     this._stepTrail(now);
   }
 
