@@ -232,6 +232,7 @@
       var me = await apiJson('/user');
       state.signedIn = true; state.login = me.login; state.avatar = me.avatar_url;
       if (readSaved() && !PREVIEW) scheduleRenew();
+      checkApp();
     } catch (e) {
       if (e instanceof RateLimit) throw e;
       clearToken();
@@ -339,6 +340,30 @@
     clearToken(); emit('auth', state);
   }
   function staysSignedIn() { return !!readSaved(); }
+
+  /* A GitHub sign-in reads only what the HelloWorldIE Hub app may read: the repos it is installed
+     on, with the permissions it was given. Ask GitHub once after signing in, so the hub can say
+     plainly what is missing instead of failing project by project. Emits 'app' with
+     { installed, all, contents, manage } (manage: where to change it on GitHub). */
+  var appCheck = null;
+  function checkApp() {
+    if (appCheck || PREVIEW || !token) return appCheck;
+    var method = null; try { method = sessionStorage.getItem(METHOD_KEY); } catch (e) {}
+    if (method !== 'app') return null;
+    appCheck = apiJson('/user/installations?per_page=100').then(function (j) {
+      var list = (j && Array.isArray(j.installations)) ? j.installations : [];
+      var mine = null;
+      list.forEach(function (i) { if (i && i.account && String(i.account.login).toLowerCase() === String(ACCOUNT).toLowerCase()) mine = i; });
+      var res = {
+        installed: !!mine, all: !!(mine && mine.repository_selection === 'all'),
+        contents: !!(mine && mine.permissions && /^(read|write)$/.test(mine.permissions.contents || '')),
+        manage: mine && typeof mine.html_url === 'string' && /^https:\/\/github\.com\//.test(mine.html_url) ? mine.html_url : 'https://github.com/settings/installations'
+      };
+      state.app = res; emit('app', res);
+      return res;
+    }, function () { appCheck = null; return null; });
+    return appCheck;
+  }
 
   /* ---------- repos ---------- */
   function slim(r) {
@@ -731,7 +756,7 @@
     get progress() { return progress; },
     get hasToken() { return !!token || PREVIEW; },
     loadRepos: loadRepos, signIn: signIn, signOut: signOut,
-    signInWithGitHub: signInWithGitHub, authReady: AUTH_READY, staysSignedIn: staysSignedIn,
+    signInWithGitHub: signInWithGitHub, authReady: AUTH_READY, staysSignedIn: staysSignedIn, checkApp: checkApp,
     projects: projects, info: info, findRepo: findRepo, isCopy: isCopy,
     cleanCard: cleanCard, safePath: safePath, httpsUrl: httpsUrl,
     fileText: fileText, fileBlob: fileBlob, image: image, tree: tree,

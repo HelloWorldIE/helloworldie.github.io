@@ -437,6 +437,15 @@
     who.innerHTML = s.signedIn ? (s.avatar ? '<img alt="" width="28" height="28" src="' + esc(s.avatar) + '">' : '') + '<span class="hw-hdr-label">' + esc(s.login) + (s.preview ? ' (local preview)' : '') + '</span>' : '';
   }
   GH.on('auth', syncAuth);
+  /* After a GitHub sign-in: say plainly if the app cannot read the repos (not installed, only on
+     some repos, or without Contents read). Once a session. */
+  GH.on('app', function (a) {
+    if (!a || (a.installed && a.all && a.contents)) return;
+    var msg = !a.installed ? 'Signed in, but the HelloWorldIE Hub app is not installed on your account, so private projects and files cannot be read. On GitHub: Settings, Applications, then install it on all repositories.'
+      : !a.contents ? 'Signed in, but the HelloWorldIE Hub app may not read files. On GitHub, give it Contents: Read-only under its permissions.'
+      : 'Signed in, but the HelloWorldIE Hub app is installed on some repos only. On GitHub: Settings, Applications, then choose All repositories.';
+    toast(msg, 'warn');
+  });
   GH.on('repos', function () { syncAuth(); if (signLoader) { signLoader(); signLoader = null; } });
   GH.on('error', function () { if (signLoader) { signLoader(); signLoader = null; } });
   syncAuth();

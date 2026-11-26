@@ -544,8 +544,12 @@
     }).catch(function (e) {
       busy = false; boot('', '', false);
       console.warn('City: could not read the files of ' + name, e);
-      var limit = GH.RateLimit && e instanceof GH.RateLimit;
-      toast(limit ? 'GitHub’s limit for signed-out visitors is reached. Sign in, or try again later.' : 'The files of this project could not be read. Try again in a minute.', 'warn');
+      var limit = GH.RateLimit && e instanceof GH.RateLimit, st = e && e.status, app = GH.state && GH.state.app;
+      if (st === 409) { toast('This project has no files to show yet.'); if (!slideOn) play('notfound'); return; }   /* an empty repo */
+      toast(limit ? 'GitHub’s limit for signed-out visitors is reached. Sign in, or try again later.'
+        : (st === 403 || st === 404) && app && !(app.installed && app.all && app.contents) ? 'GitHub would not show these files to the hub: the HelloWorldIE Hub app is not installed on this repo, or may not read files. Check it on GitHub under Settings, Applications.'
+        : (st === 403 || st === 404) && !GH.hasToken ? 'This project is private. Sign in to look inside it.'
+        : 'The files of this project could not be read' + (st ? ' (GitHub answered ' + st + ')' : '') + '. Try again in a minute.', 'warn');
       if (!slideOn) play('notfound');
     });
   }
