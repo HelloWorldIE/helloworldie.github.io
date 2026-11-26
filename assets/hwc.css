@@ -257,7 +257,7 @@ a.hwc-pill:hover { border-color: var(--accent); color: var(--accent); }
   --hwc-bot-head: var(--ink, #262430);
 }
 :root[data-theme="dark"] .hwc-bot { --hwc-bot-head: var(--bot-head-on-dark, #f2f0f8); }
-.hwc-bot.is-off { opacity: 0; }
+.hwc-bot.is-off, .hwc-bot.is-3d { opacity: 0; }
 .hwc-stage.is-boot .hwc-bot { z-index: 7; }
 .hwc-bot-in { width: 100%; height: 100%; }
 .hwc-bot .m-head path { fill: var(--hwc-bot-head); transition: fill .25s ease; }

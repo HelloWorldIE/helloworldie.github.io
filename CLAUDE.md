@@ -28,7 +28,9 @@ colour of their own (Bryan, 2026-11-26; `PALETTE.facades` in `hwc-ui.js`, the sa
 monospace except a file's text in the code browser; no glass, blur, glow, neon, particles, planets
 or spinners; motion "organic, natural, living" (the `--ease-*` tokens), with full reduced-motion
 support; the eye pill (2:5 capsule) as the only shape; the bot is the real mascot engine, alive and
-meaningful, one per view, never 3D; a rounded element has a full border or none.
+meaningful, one per view, never 3D, except in the City's overview, where he is a 3D model made
+from the mascot's own drawing (Bryan, 2026-11-26; `_makeBot` in `hwc-city.js`) and the flat one
+steps aside; a rounded element has a full border or none.
 
 ## Files
 
@@ -45,7 +47,7 @@ meaningful, one per view, never 3D; a rounded element has a full border or none.
 | `assets/hwx-views.js`, `assets/hwx.css` | The router and every view (below), cards, project pages, detail levels, search. `hwx.css` also holds the base classes (`.btn`, `.field`, `.eyebrow`, `.cat`, `.badge`, `.decor`). | `HWX.render`, `HWX.go` |
 | `assets/hero.js`, `assets/hero.css` | The header: title, the skyline (every project that is not retired as a pill building in its City colour, the live ones with the bot's eyes; pointing names it, selecting opens it) and four animated cards (Projects, Last changes, Latest update, Rules passing) with the bot narrating the load; also full-window mode for `/dashboard/` (no skyline). | `HWHero` |
 | `assets/hwc-ui.js`, `assets/hwc.css` | The City's page side: the `#/city` view, panels, key, search, tours, Projects list, the project slide and the Discover card. Loads the City module on demand. | `HWX.views.city`, `HWX.citySlide`, `HWX.citySearch`, `HWX.cityPreview` |
-| `assets/city/hwc-city.js`, `city-architecture.js`, `city-plan.js`, `city-props.js` | The City (ES modules, three.js): districts, buildings, file blocks, props, tours, walk mode, the HelloWorld line (no cable or car: the bot swims it in strokes, gather, push and settle, as `assets/mascot/AGENTS.md` 3.4 asks (`_legPlan`, `_legU`), and `_stepTrail` draws his fading light trail from the same sums, starting just outside his outline, so it is smooth at any frame rate and never runs over him). Colours only through the palette handler from `hwc-ui.js`. Never touches the token. | |
+| `assets/city/hwc-city.js`, `city-architecture.js`, `city-plan.js`, `city-props.js` | The City (ES modules, three.js): districts, buildings, file blocks, props, tours, walk mode, the HelloWorld line and the bot in 3D (`_makeBot`, `_stepBot`): he swims the line district to district and swims to whatever is selected, with a stride of overlapping pushes (`strideTable`: he never stops mid-journey, as `assets/mascot/AGENTS.md` 3.4 and Bryan ask), and `_stepTrail` draws his fading light trail from the same sums, starting just behind him, so it is smooth at any frame rate. Colours only through the palette handler from `hwc-ui.js`. Never touches the token. | |
 | `assets/mascot/` | The bot's animation engine (HelloWorld's own; needs `window.gsap`). Read its `README.md` and `AGENTS.md` before using it. | |
 | `assets/brand/`, `assets/fonts/`, `assets/bot.svg` | Bot marks and silhouette, app icons, Plus Jakarta Sans, the favicon. | |
 | `dashboard/index.html`, `assets/dashboard-page.js` | The one-screen dashboard (`HWHero` in full mode) with Live, Demo (`?demo`) and Big demo (`?big`) data. | |

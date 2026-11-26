@@ -30,7 +30,7 @@
   var GH = window.HWGH, CFG = window.HW_CONFIG || {};
   if (!GH) return;
   var OWNER = CFG.account || GH.account;
-  var CITY_URL = 'assets/city/hwc-city.js?v=3';
+  var CITY_URL = 'assets/city/hwc-city.js?v=4';
 
   /* ---------------- small helpers ---------------- */
   var own = function (o, k) { return o != null && typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k); };
@@ -318,6 +318,7 @@
   function botTarget() {
     var b = stageBox(), s = botSize(), a = bot.target, x, y;
     if (!b.w) return null;
+    if (bot.kind === '3d' && !bot.boot) return null;                                   /* he is in the world */
     if (bot.boot) { x = b.w / 2; y = b.h / 2 - s / 2 - 48; }                           /* over the sentence while the City is built, or cannot be */
     else if (!a) { x = b.w - s / 2 - 28; y = s / 2 + 78; }                              /* at rest, in the light's corner */
     else if (a.kind === 'car') { x = a.x; y = a.y; }                                      /* flying the line: the trail starts under him */
@@ -378,20 +379,14 @@
   }
   /* The City says where its anchor is (every frame it moves). A change of what he is following
      starts a swim; otherwise he stays with it. */
-  function strokeLead(a) {
-    if (!a || a.kind !== 'car' || a.stroke == null || a.stroke === bot.stroke) return;
-    bot.stroke = a.stroke;
-    if (!bot.m || !window.gsap || reduced() || bot.swim) return;
-    var T = Math.max(1.5, (a.sms || 4000) / 1000), ux = a.sdx || 0, uy = a.sdy || 0;
-    gsap.timeline().to(bot.m.EYE, { xPercent: ux * 22, yPercent: uy * 13, duration: T * 0.32, ease: 'power2.out' })
-      .to(bot.m.EYE, { xPercent: 0, yPercent: 0, duration: T * 0.68, ease: 'sine.inOut' });
-    gsap.timeline().to(bot.m.bot, { rotation: ux * 3, duration: T * 0.32, ease: 'power2.out' })
-      .to(bot.m.bot, { rotation: 0, duration: T * 0.68, ease: 'sine.inOut' });
-  }
   function onAnchor(a) {
     if (!bot.wrap) return;
+    /* Across the whole City the bot lives in the world, in 3D (hwc-city.js _makeBot): this flat one
+       steps aside. Inside a project he is still drawn here. */
+    var in3d = !!(a && a.kind === '3d');
+    bot.wrap.classList.toggle('is-3d', in3d);
+    if (in3d) { bot.kind = '3d'; bot.target = null; bot.swim = null; return; }
     if (bot.boot) { bot.target = a; bot.kind = a ? a.kind : null; return; }
-    strokeLead(a);
     var kind = a ? a.kind : null;
     if (a && !a.front) return;                         /* behind the camera: stay where he is */
     var was = bot.kind;

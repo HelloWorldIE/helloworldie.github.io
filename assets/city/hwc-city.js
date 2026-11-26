@@ -52,6 +52,7 @@ export { KEY, KEY_GLYPH };
 
 const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)');
 const MAX_H = 26;
+const BOT_W = 4.6;                  /* the bot's width in the world: about a small house, the size the line's car was */
 const WALK_EYE = 2.0;
 const SLAB = 0.5;                  /* a district's plot, edge to top */
 const BASE = 0.58;                 /* where buildings stand: on the plot and its lot */
@@ -217,6 +218,29 @@ function towerMaterial(uniforms) {
   };
   mat.customProgramCacheKey = () => 'hwc-tower';
   return mat;
+}
+
+/* How the bot swims (assets/mascot/AGENTS.md 3.4, and Bryan, 2026-11-26: "once its momentum runs
+   out it's already got everything ready to push on ... a jellyfish on a mission"). Speed is a row
+   of pulses, each a quick push that peaks after 0.4 s and then coasts; the next push starts while
+   the last is still carrying him (at about a third of its peak), so he never stops between them.
+   A journey starts with a small gather (a pull back against the travel) and ends with one long
+   glide that eases to rest. Returns the share of the way covered at any share of the time. */
+function strideTable(n) {
+  const SP = 1.25, X0 = 0.4, TAIL = 2.4, G = 0.32, N = 320;
+  const D = G + (n - 1) * SP + TAIL, cum = new Float32Array(N + 1);
+  let acc = 0, prev = 0;
+  for (let i = 0; i <= N; i++) {
+    const t = (i / N) * D;
+    let v = t < G ? -0.22 * Math.sin(Math.PI * t / G) : 0;                        /* gather */
+    for (let k = 0; k < n; k++) { const x = (t - G - k * SP) / X0; if (x > 0) v += x * Math.exp(1 - x); }   /* pushes */
+    const e = t / D;
+    if (e > 0.78) { const q = (e - 0.78) / 0.22; v *= 1 - q * q * (3 - 2 * q); }    /* the last glide eases to rest */
+    if (i) acc += (v + prev) / 2;
+    cum[i] = acc; prev = v;
+  }
+  const total = cum[N] || 1;
+  return { D, sAt(k) { const f = clamp(k, 0, 1) * N, i = Math.floor(f), j = Math.min(N, i + 1); return (cum[i] + (cum[j] - cum[i]) * (f - i)) / total; } };
 }
 
 /* The palette, as colours and numbers, so it can be eased from one theme to the other. */
@@ -1048,66 +1072,172 @@ export class City {
     const car = new THREE.Object3D();
     this.props.add(car);
     this._buildTrail();
+    this.bot3 = this._makeBot();
+    this.props.add(this.bot3);
+    this.botMode = 'line'; this.botWant = ''; this.swim = null; this.botTo = null;
     this.cable = { curve, stopU, car, i: 0, dir: 1, t0: performance.now(), phase: 'wait', u: stopU[0], length: curve.getLength(),
-      stroke: 0, strokeAt: -1, strokeDir: [0, 0], strokeMs: 0,
       names: stops.map((d) => d.label), stages: stops.map((d) => d.hood.stageLabel || ''), counts: stops.map((d) => d.count) };
     this._stepLine(performance.now());
   }
+  /* ---- the bot, in 3D (Bryan, 2026-11-26: "can it be 3d?", reversing the brief's "never a 3D
+     model of him"). Made from the mascot's own drawing (assets/mascot/characters/helloworld.js):
+     the head outline extruded with soft bevels, the screen set back inside it, the two eye pills on
+     the screen. He lives in the world, so he keeps his size against the buildings at every zoom,
+     faces where he is going, leans into each push and bobs when he rests. ---- */
+  _botGeometry() {
+    if (this._botGeo) return this._botGeo;
+    const C0 = 153, DEPTH = 84, BEV = 14;
+    const flip = (pts, dy) => pts.map((q) => new THREE.Vector2(q.x - C0, C0 - (q.y + dy)));
+    const data = new SVGLoader().parse('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 306 306"><path d="' + helloworld.head.paths[0].d + '"/></svg>');
+    const raw = [];
+    data.paths.forEach((pp) => SVGLoader.createShapes(pp).forEach((sh) => raw.push(sh)));
+    /* one outline with the screen as its hole; if the loader gives two filled shapes, the smaller is the screen */
+    let outer, holes;
+    if (raw.length === 1 && raw[0].holes.length) { const ex = raw[0].extractPoints(10); outer = ex.shape; holes = ex.holes; }
+    else {
+      const ex = raw.map((sh) => sh.extractPoints(10).shape).sort((p1, p2) => Math.abs(THREE.ShapeUtils.area(p2)) - Math.abs(THREE.ShapeUtils.area(p1)));
+      outer = ex[0]; holes = ex.slice(1, 2);
+    }
+    const ring = new THREE.Shape(flip(outer, 13.2));
+    holes.forEach((h) => ring.holes.push(new THREE.Path(flip(h, 13.2))));
+    const head = new THREE.ExtrudeGeometry(ring, { depth: DEPTH, bevelEnabled: true, bevelThickness: BEV, bevelSize: 8, bevelSegments: 5, curveSegments: 8 });
+    const face = holes.length ? new THREE.ExtrudeGeometry(new THREE.Shape(flip(holes[0], 13.2)), { depth: DEPTH * 0.76, bevelEnabled: false }) : null;
+    if (face) face.translate(0, 0, DEPTH * 0.12);
+    const eye = (x) => new THREE.CapsuleGeometry(11, 36, 6, 14).scale(1, 1, 0.55).translate(x - C0, C0 - 154.5, DEPTH * 0.88 + 3);
+    const eyes = mergeGeometries([eye(306 * 0.382), eye(306 * 0.618)]);
+    [head, face, eyes].forEach((g) => { if (!g) return; g.translate(0, 0, -DEPTH / 2); g.scale(1 / 306, 1 / 306, 1 / 306); g.computeVertexNormals(); g.userData.keep = true; });
+    this._botGeo = { head, face, eyes };
+    return this._botGeo;
+  }
+  _makeBot() {
+    const G = this._botGeometry();
+    if (!this.botMats) {
+      this.botMats = { head: this._toneMat('ink', { roughness: 0.42 }, true), face: this._toneMat('card', { roughness: 0.7 }, true), eyes: this._toneMat('accent', { roughness: 0.35 }, true) };
+    }
+    const grp = new THREE.Group(), body = new THREE.Group();
+    const head = new THREE.Mesh(G.head, this.botMats.head); head.castShadow = true;
+    body.add(head);
+    if (G.face) body.add(new THREE.Mesh(G.face, this.botMats.face));
+    body.add(new THREE.Mesh(G.eyes, this.botMats.eyes));
+    body.scale.setScalar(BOT_W);
+    grp.add(body);
+    grp.userData = { body, yaw: 0, pitch: 0, last: null };
+    return grp;
+  }
+  /* A journey of length L (world units) starting now: how far along it he is at each moment. */
+  _plan(L, now, posAt, kind) {
+    const n = clamp(Math.round(L / 15), kind === 'leg' ? 2 : 1, kind === 'leg' ? 7 : 4), tb = strideTable(n);
+    return { t0: now, ms: tb.D * 1000, sAt: tb.sAt, posAt, kind };
+  }
+  _swimTo(target, now, kind) {
+    const from = this.bot3.position.clone(), to = target.clone(), dist = from.distanceTo(to);
+    const mid = from.clone().lerp(to, 0.5); mid.y = Math.max(from.y, to.y) + Math.max(4, dist * 0.22);
+    const curve = new THREE.QuadraticBezierCurve3(from, mid, to);
+    this.swim = this._plan(dist, now, (sv) => curve.getPoint(clamp(sv, -0.05, 1)), kind);
+    this.botTo = to;
+  }
+  _lineHome() { const c = this.cable; return c.curve.getPointAt(clamp(c.stopU[c.i], 0, 1)); }
+  /* What he should go and look at: the selected building, district or thing, or nothing. He waits
+     beside it (to the camera's right, so the preview rising over a demo building never hides him)
+     and looks at it. The key is what was chosen, so a camera move does not send him off again. */
+  _botFocus() {
+    if (this.walking || !this.interactive) return null;
+    let key = '', look = null, room = 4;
+    if (this.focusAt) { key = 'at:' + this.focusAt.toArray().map((v) => v.toFixed(1)).join(','); look = this.focusAt.clone(); }
+    else if (this.selected) { const t = this.selected; key = 'sel:' + (t.item && t.item.key) + ':' + (t.file ? t.file.p : ''); look = new THREE.Vector3(t.x, BASE + t.h, t.z); room = Math.max(4, (t.w || 4) * 0.6 + 3); }
+    else if (this.hoodSel) { const d = this.districts.find((x) => x.hood && x.hood.id === this.hoodSel); if (d && d.label_) { key = 'hood:' + this.hoodSel; look = d.label_.position.clone(); } }
+    if (!look) return null;
+    if (key === this.botWant && this.botTo) return { key, point: this.botTo, look: this.botLook || look };
+    const right = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 0).setY(0).normalize();
+    return { key, point: look.clone().addScaledVector(right, room).add(new THREE.Vector3(0, 3, 0)), look };
+  }
+  _stepBot(now, dt) {
+    const B = this.bot3, c = this.cable;
+    if (!B || !c) return;
+    /* where he is heading: something selected, back to the line, or along it */
+    const want = this._botFocus();
+    const key = want ? want.key : '';
+    if (key !== this.botWant) {
+      this.botWant = key;
+      this.botLook = want ? want.look : null;
+      if (want) { this.botMode = 'focus'; if (REDUCED.matches) { this.swim = null; this.botTo = want.point; } else this._swimTo(want.point, now, 'focus'); }
+      else if (this.botMode !== 'line') { this.botMode = 'return'; if (REDUCED.matches) { this.swim = null; this.botMode = 'line'; } else this._swimTo(this._lineHome(), now, 'return'); }
+    }
+    const sw = this.swim, P = new THREE.Vector3(), V = new THREE.Vector3();
+    let moving = false;
+    if (sw && now < sw.t0 + sw.ms && (this.botMode !== 'line' || sw.kind === 'leg')) {
+      const k = (now - sw.t0) / sw.ms;
+      P.copy(sw.posAt(sw.sAt(k)));
+      V.copy(sw.posAt(sw.sAt(k + 60 / sw.ms))).sub(P);                          /* where the next 60 ms take him */
+      moving = V.lengthSq() > 1e-6;
+    } else if (this.botMode === 'focus' && this.botTo) P.copy(this.botTo);
+    else {
+      if (this.botMode === 'return') { this.botMode = 'line'; c.phase = 'wait'; c.t0 = now; }
+      P.copy(c.car.position);
+    }
+    /* face the way he swims; at rest, turn slowly toward the camera, as if to look at whoever is there */
+    const u = B.userData, cam = this.camera.position;
+    const L = this.botMode === 'focus' && this.botLook ? this.botLook : cam;          /* at rest: what he came to see, else the viewer */
+    const yawWant = moving ? Math.atan2(V.x, V.z) : Math.atan2(L.x - P.x, L.z - P.z);
+    let dy = yawWant - u.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+    const ease = REDUCED.matches ? 1 : 1 - Math.exp(-dt / (moving ? 0.35 : 1.4));
+    u.yaw += dy * ease;
+    const speed = moving ? V.length() / 0.06 : 0;                                  /* world units a second */
+    const pitchWant = moving ? clamp(speed * 0.022, 0, 0.32) : (this.botMode === 'focus' ? 0.22 : 0);   /* leans into the push; looks down at what he came to see */
+    u.pitch += (pitchWant - u.pitch) * ease;
+    const bob = REDUCED.matches ? 0 : Math.sin(now * 0.0017) * (moving ? 0.08 : 0.22) * BOT_W / 4;
+    B.position.set(P.x, P.y + bob, P.z);
+    B.rotation.set(u.pitch, u.yaw, -dy * 0.25 * (moving ? 1 : 0), 'YXZ');
+    this._stepTrail(now);
+  }
+
   /* ---- the bot's light trail: a soft ribbon along the last 2.8 s of his path, facing the camera,
      narrowing and fading to nothing behind him. A faint wide band under a brighter core. It is
-     worked out from the route itself (where he was at each moment of the last 2.8 s), not from past
-     frames, so it is just as smooth on a slow machine. A stop lasts longer than the trail, so the
-     trail only ever lies along one leg: the one he is on, or the one he has just finished. ---- */
+     worked out from the journey itself (where he was at each moment), not from past frames, so it
+     is just as smooth on a slow machine. It starts just behind him, never across his face. ---- */
   _buildTrail() {
     const MAX = 96;
-    const mk = (opacity) => {
+    const mk = () => {
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MAX * 2 * 3), 3).setUsage(THREE.DynamicDrawUsage));
       g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(MAX * 2 * 4), 4).setUsage(THREE.DynamicDrawUsage));
       const idx = [];
       for (let i = 0; i < MAX - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
       g.setIndex(idx); g.setDrawRange(0, 0);
-      const m = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide, toneMapped: false, opacity });
+      const m = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
       const mesh = new THREE.Mesh(g, m);
       mesh.frustumCulled = false; mesh.renderOrder = 5; mesh.visible = false;
       this.props.add(mesh);
       return mesh;
     };
-    this.trail = { MAX, halo: mk(1), core: mk(1), ms: 2800 };
+    this.trail = { MAX, halo: mk(), core: mk(), ms: 2800 };
   }
   _stepTrail(now) {
-    const tr = this.trail, c = this.cable, leg = c && c.leg;
-    const hide = () => { tr.core.visible = false; tr.halo.visible = false; };
+    const tr = this.trail, sw = this.swim;
     if (!tr) return;
-    if (!leg || REDUCED.matches || this.walking) return hide();
-    const from = Math.max(leg.t0, now - tr.ms), to = Math.min(leg.t0 + leg.ms, now);
+    const hide = () => { tr.core.visible = false; tr.halo.visible = false; };
+    if (!sw || REDUCED.matches || this.walking) return hide();
+    const from = Math.max(sw.t0, now - tr.ms), to = Math.min(sw.t0 + sw.ms, now);
     if (to - from < 30) return hide();
-    const n = tr.MAX, pts = [];
-    /* He is drawn over the canvas, and his face has see-through parts, so the trail must start behind
-       him, not under him: it begins just outside his outline (measured on screen) and fades in from
-       there. */
-    const W = this._w || 1, H = this._h || 1, R = Math.max(12, (this.h.botSize ? this.h.botSize() : 48) / 2);
-    const scr = (v) => { const q = v.clone().project(this.camera); return [(q.x + 1) / 2 * W, (1 - q.y) / 2 * H]; };
-    const at = scr(c.car.position);
+    const n = tr.MAX, pts = [], at = this.bot3 ? this.bot3.position : null, R = BOT_W * 0.62;
     for (let j = 0; j < n; j++) {
       const tau = from + (to - from) * (j / (n - 1));
-      const p = c.curve.getPointAt(clamp(this._legU(leg, tau), 0, 1)), s = scr(p);
-      const dist = Math.hypot(s[0] - at[0], s[1] - at[1]);
-      const edge = clamp((dist - R * 0.92) / (R * 0.9), 0, 1);           /* 0 under him, 1 clear of him */
+      const p = sw.posAt(sw.sAt((tau - sw.t0) / sw.ms));
+      const edge = at ? clamp((p.distanceTo(at) - R) / (R * 1.2), 0, 1) : 1;         /* 0 inside him, 1 clear of him */
       pts.push({ p, life: 1 - (now - tau) / tr.ms, edge: edge * edge * (3 - 2 * edge) });
     }
     const Pl = this.P, head = Pl.tones.accent, tail = Pl.tones.accentSoft;
     const cam = this.camera.position, side = new THREE.Vector3(), tg = new THREE.Vector3(), view = new THREE.Vector3(), col = new THREE.Color();
     /* widths in screen pixels (half of each band), turned into world units at each point's distance */
     const perPx = 2 * Math.tan(THREE.MathUtils.degToRad(this.camera.fov) / 2) / Math.max(1, this._h || 600);
-    [[tr.core, 5, 1], [tr.halo, 16, 0.26]].forEach(([mesh, width, alpha]) => {
+    [[tr.core, 4, 1], [tr.halo, 13, 0.24]].forEach(([mesh, width, alpha]) => {
       const pos = mesh.geometry.attributes.position, cl = mesh.geometry.attributes.color;
       for (let i = 0; i < n; i++) {
         const p = pts[i].p, a = pts[Math.max(0, i - 1)].p, b = pts[Math.min(n - 1, i + 1)].p;
         tg.subVectors(b, a); if (tg.lengthSq() < 1e-8) tg.set(1, 0, 0);
         view.subVectors(cam, p);
         side.crossVectors(tg, view).normalize();
-        const life = Math.max(0, pts[i].life);                             /* 1 where he is now, 0 at the end */
+        const life = Math.max(0, pts[i].life);
         const w = width * perPx * view.length() * Math.pow(life, 0.8) * (0.35 + 0.65 * pts[i].edge);
         pos.setXYZ(i * 2, p.x + side.x * w, p.y + side.y * w, p.z + side.z * w);
         pos.setXYZ(i * 2 + 1, p.x - side.x * w, p.y - side.y * w, p.z - side.z * w);
@@ -1120,71 +1250,32 @@ export class City {
       mesh.visible = true;
     });
   }
-  /* ---- how the bot swims the line ----
-     The way he swims everywhere (assets/mascot/AGENTS.md 3.4 and life.js): pulse and glide, never a
-     constant slide. A leg between two districts is one to four strokes. Each stroke gathers (a small
-     pull back against the travel, sine in, 0.36 s), pushes hard (power3 out, about 2.6 s, carrying a
-     little past its mark) and settles back from that carry (sine in-out, 1.1 s). Only his position
-     moves: no squash or stretch while travelling. Where he is at any moment is worked out from the
-     time alone, so the trail behind him can be drawn from the same sums. */
-  _legPlan(a, b, t0) {
-    const c = this.cable, len = Math.abs(b - a) * c.length;
-    const n = clamp(Math.round(len / 40), 1, 4), strokes = [];
-    let t = t0;
-    for (let k = 0; k < n; k++) {
-      const ua = a + (b - a) * k / n, ub = a + (b - a) * (k + 1) / n;
-      const gather = 360, push = 2600 + (len / n) * 14, settle = 1100;
-      strokes.push({ ua, ub, span: ub - ua, t0: t, gather, push, settle, ms: gather + push + settle });
-      t += gather + push + settle;
-    }
-    return { a, b, t0, strokes, ms: t - t0 };
-  }
-  _legU(leg, tau) {
-    const ss = leg.strokes;
-    let s = ss[ss.length - 1];
-    for (let i = 0; i < ss.length; i++) if (tau < ss[i].t0 + ss[i].ms) { s = ss[i]; break; }
-    const t = tau - s.t0, back = s.span * 0.035, over = s.span * 0.05;
-    if (t <= 0) return s.ua;
-    if (t < s.gather) return s.ua - back * (1 - Math.cos((t / s.gather) * Math.PI / 2));              /* gather */
-    if (t < s.gather + s.push) {                                                                     /* push and carry */
-      const p = (t - s.gather) / s.push;
-      return (s.ua - back) + (s.ub + over - (s.ua - back)) * (1 - Math.pow(1 - p, 3));
-    }
-    if (t < s.ms) return s.ub + over - over * (0.5 - 0.5 * Math.cos(((t - s.gather - s.push) / s.settle) * Math.PI));   /* settle */
-    return s.ub;
-  }
+
+  /* ---- the line: he swims it district to district, idea to live, resting at each stop. While he
+     has gone to look at something selected, the line waits for him. ---- */
   _stepLine(now) {
     const c = this.cable;
     if (!c) return;
-    const wait = 3200;                                  /* longer than the trail, so it fades out at each stop */
+    const wait = 2600;
+    if (this.botMode && this.botMode !== 'line') { c.phase = 'wait'; c.t0 = now; return; }
     let u = c.stopU[c.i];
     if (!REDUCED.matches) {
       if (c.phase === 'wait' && now - c.t0 > wait) {
         if (c.i + c.dir < 0 || c.i + c.dir >= c.stopU.length) c.dir = -c.dir;
-        c.phase = 'move'; c.t0 = now;
-        c.leg = this._legPlan(c.stopU[c.i], c.stopU[c.i + c.dir], now);
+        const a = c.stopU[c.i], b = c.stopU[c.i + c.dir];
+        c.phase = 'move'; c.t0 = now; c.leg = { a, b };
+        this.swim = this._plan(Math.abs(b - a) * c.length, now, (sv) => c.curve.getPointAt(clamp(a + (b - a) * sv, 0, 1)), 'leg');
       }
-      if (c.phase === 'move' && c.leg) {
-        const leg = c.leg;
-        u = this._legU(leg, now);
-        /* a new stroke: tell the page which way it goes on screen, so his eyes lead and he tilts */
-        let si = leg.strokes.length - 1;
-        for (let i = 0; i < leg.strokes.length; i++) if (now < leg.strokes[i].t0 + leg.strokes[i].ms) { si = i; break; }
-        const key = leg.t0 + ':' + si;
-        if (key !== c.strokeAt && now < leg.t0 + leg.ms) {
-          c.strokeAt = key; c.stroke++;
-          const s = leg.strokes[si], A = c.curve.getPointAt(clamp(s.ua, 0, 1)).project(this.camera), B = c.curve.getPointAt(clamp(s.ub, 0, 1)).project(this.camera);
-          const dx = (B.x - A.x) * (this._w || 1), dy = -(B.y - A.y) * (this._h || 1), d = Math.hypot(dx, dy) || 1;
-          c.strokeDir = [dx / d, dy / d]; c.strokeMs = s.ms;
-        }
-        if (now >= leg.t0 + leg.ms) { c.i += c.dir; c.phase = 'wait'; c.t0 = now; u = leg.b; }
+      if (c.phase === 'move' && c.leg && this.swim) {
+        const k = (now - this.swim.t0) / this.swim.ms;
+        u = c.leg.a + (c.leg.b - c.leg.a) * this.swim.sAt(Math.min(1, k));
+        if (k >= 1) { c.i += c.dir; c.phase = 'wait'; c.t0 = now; u = c.leg.b; }
       }
     }
     const uu = clamp(u, 0, 1), p = c.curve.getPointAt(uu), tg = c.curve.getTangentAt(uu);
     c.u = uu;
     c.car.position.set(p.x, p.y, p.z);
     c.car.rotation.y = Math.atan2(tg.x, tg.z) - Math.PI / 2;
-    this._stepTrail(now);
     if (this.ride) {
       /* ride along: sit just behind the car, looking down the line */
       const dir = tg.clone().multiplyScalar(c.dir), car = c.car.position;
@@ -2379,11 +2470,11 @@ export class City {
   /* Where the bot (drawn by the page, over the canvas) should be: over the selected thing, or on the
      line's car. Sent in stage pixels whenever it moves. */
   _anchorKind(out) {
+    if (this.level.kind === 'estate' && this.bot3) { out.copy(this.bot3.position); return '3d'; }   /* he is in the world here */
     if (this.walking || !this.interactive) return null;
     if (this.focusAt) { out.copy(this.focusAt); return 'focus'; }
     if (this.selected) { const t = this.selected; out.set(t.x, BASE + (t.curH || t.h) + 2.4, t.z); return 'focus'; }
     if (this.hoodSel) { const d = this.districts.find((x) => x.hood && x.hood.id === this.hoodSel); if (d && d.label_) { out.copy(d.label_.position); return 'focus'; } }
-    if (this.level.kind === 'estate' && this.cable) { out.copy(this.cable.car.position); return 'car'; }
     return null;
   }
   _emitAnchor() {
@@ -2392,11 +2483,11 @@ export class City {
     if (kind && this._w) {
       const v = this._av.clone().project(this.camera);
       msg = { kind, x: (v.x + 1) / 2 * this._w, y: (1 - v.y) / 2 * this._h, front: v.z < 1, flying: !!this.flight, ride: !!this.ride };
-      if (kind === 'car' && this.cable) { msg.stroke = this.cable.stroke; msg.sdx = this.cable.strokeDir[0]; msg.sdy = this.cable.strokeDir[1]; msg.sms = this.cable.strokeMs; }
     }
     const a = this._lastAnchor;
     if (!msg && !a) return;
-    if (msg && a && a.kind === msg.kind && Math.abs(a.x - msg.x) < 0.4 && Math.abs(a.y - msg.y) < 0.4 && a.flying === msg.flying && a.ride === msg.ride && a.stroke === msg.stroke) return;
+    if (msg && a && msg.kind === '3d' && a.kind === '3d') return;               /* the page only needs to know once */
+    if (msg && a && a.kind === msg.kind && Math.abs(a.x - msg.x) < 0.4 && Math.abs(a.y - msg.y) < 0.4 && a.flying === msg.flying && a.ride === msg.ride) return;
     this._lastAnchor = msg;
     this.h.onAnchor(msg);
   }
@@ -2509,6 +2600,7 @@ export class City {
       this._stepMovers(now, dt);
     }
     this._stepLine(now);
+    this._stepBot(now, dt);
     for (let i = this.anims.length - 1; i >= 0; i--) {
       const a = this.anims[i], k = clamp((now - a.t0) / 550, 0, 1);
       if (k <= 0) continue;
@@ -2557,7 +2649,7 @@ export class City {
     this.labels.forEach((o) => { this.rig.remove(o); if (o.element.parentNode) o.element.remove(); });
     this.painters = this.painters.filter((p) => p.keep);
     this.districts = []; this.towers = []; this.labels = []; this.pickables = []; this.anims = []; this.swings = []; this.later = []; this.movers = []; this.roofs = [];
-    this.cable = null; this.trail = null; this.siteObjs = null; this.siteRoutes = null;
+    this.cable = null; this.trail = null; this.bot3 = null; this.swim = null; this.botMode = 'line'; this.botWant = ''; this.botTo = null; this.botLook = null; this.siteObjs = null; this.siteRoutes = null;
     this.selected = null; this.hoodSel = null; this.hover = null; this._shown = null; this.focusAt = null;
     this.prev.t = null; this.prev.a = 0;
     this.ringTarget = 0; this.ringA = 0;
