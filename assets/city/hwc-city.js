@@ -1678,7 +1678,7 @@ export class City {
       const h = Math.min((1.4 + mag * MAX_H) * (sig.verticality || 1), foot * 4.5, MAX_H * 1.4);
       this._place(arch, { type: 'file', item: f, district: d, x: c.site.x, z: c.site.z, w: foot, dd: foot,
         rot: c.site.angle + (sig.twist || 0) * (unit(f.path, 'tw') - 0.5), h, tone: fileTone(f.path), shade: 1 + (sig.shade || 0) * 0.5,
-        facade: facadeOf(lv.repo + '/' + (d.label || d.key || '')) + (unit(f.path, 'fv') < 0.18 ? 1 : 0), mix: 0.08 + unit(f.path, 'fm') * 0.42,
+        facade: facadeOf(this.level.repo + '/' + (d.label || d.key || '')) + (unit(f.path, 'fv') < 0.18 ? 1 : 0), mix: 0.08 + unit(f.path, 'fm') * 0.42,
         order: d.towers.length / Math.max(1, cells.length), seed: unit(f.path, 's'), jitter: unit(f.path, 'j') * 200 });
     });
   }
