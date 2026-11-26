@@ -181,7 +181,9 @@ a.hwc-pill:hover { border-color: var(--accent); color: var(--accent); }
 .hwc-zoom button { width: 40px; height: 38px; border: 0; background: var(--card); color: var(--text); cursor: pointer; display: grid; place-items: center; transition: color .18s ease; }
 .hwc-zoom button + button { border-top: 1px solid var(--line-role); }
 .hwc-zoom button:hover { color: var(--accent); }
-.hwc-stage.has-panel .hwc-ctrl { right: 372px; }   /* beside the panel, not under it */
+/* With the panel open the controls stay put (Bryan, 2026-11-26: they used to jump left into the
+   City); the panel ends just above them and scrolls inside if it is long. */
+.hwc-stage.has-panel .hwc-panel { max-height: max(240px, calc(100% - 42px - var(--hwc-ctrl-h, 300px))); }
 .hwc-stage.has-panel .hwc-help, .hwc-stage.has-list .hwc-key { display: none; }
 
 .hwc-help { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 2; margin: 0; font-size: 12px; font-weight: 600; color: var(--text-2); background: color-mix(in srgb, var(--card) 86%, transparent); border-radius: 999px; padding: 4px 12px; white-space: nowrap; pointer-events: none; }

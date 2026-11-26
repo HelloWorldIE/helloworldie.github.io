@@ -658,7 +658,12 @@
         '<p class="hwc-cp-s hwc-cp-path">' + esc(sel.path) + '</p>' +
         (url ? '<div class="hwc-cp-act"><a class="hwc-primary" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">Open the file on GitHub' + I('ext') + '</a></div>' : '');
     }
-    var stage = $('#hwc-stage'); if (stage) stage.classList.toggle('has-panel', !!html);
+    var stage = $('#hwc-stage');
+    if (stage) {
+      /* The controls stay where they are; the panel stops just above them (hwc.css). */
+      var ctrl = $('.hwc-ctrl', stage); if (ctrl && html) stage.style.setProperty('--hwc-ctrl-h', ctrl.offsetHeight + 'px');
+      stage.classList.toggle('has-panel', !!html);
+    }
     if (city) city.setInset(html && matchMedia('(max-width: 760px)').matches ? 0.5 : 0);
     $$('#hwc-list [data-repo]').forEach(function (b) { b.setAttribute('aria-current', String(!!(sel && sel.type === 'project' && b.getAttribute('data-repo') === sel.key))); });
     if (!html) { el.hidden = true; el.innerHTML = ''; return; }
