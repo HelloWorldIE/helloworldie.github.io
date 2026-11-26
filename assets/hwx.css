@@ -638,7 +638,10 @@ a:hover .act .go { gap: 10px; }
 .hwx-gallery figure { margin: 0; }
 .hwx-gallery figcaption { margin-top: 8px; font-size: 13.5px; color: var(--text-2); line-height: 1.45; }
 .hwx-gallery .hwx-thumb { border-radius: var(--r-card); box-shadow: var(--shadow); }
-.hwx-readme-grid { display: grid; grid-template-columns: minmax(0, var(--read)) minmax(200px, 260px); gap: 40px; align-items: start; margin-top: 18px; }
+/* The README takes all the width the section has; the contents keep a steady 280 px beside it, and
+   when a README has no headings (contents hidden) it takes the whole row (Bryan, 2026-11-26). */
+.hwx-readme-grid { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 40px; align-items: start; margin-top: 18px; }
+.hwx-readme-grid:has(> .hwx-toc[hidden]) { grid-template-columns: minmax(0, 1fr); }
 @media (max-width: 1000px) { .hwx-readme-grid { grid-template-columns: 1fr; } .hwx-toc { order: -1; } }
 .hwx-toc { position: sticky; top: calc(var(--hdr-h) + 120px); padding: 18px 20px; border-radius: var(--r-card); border: 1px solid var(--line-role); background: var(--card); font-size: 14px; }
 @media (max-width: 1000px) { .hwx-toc { position: static; } }
