@@ -101,6 +101,8 @@
   box-shadow: var(--shadow-btn); transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease;
 }
 .hwc-primary:hover { background: var(--deep-violet, #4a2bb0); border-color: var(--deep-violet, #4a2bb0); box-shadow: var(--shadow-btn-hover); }
+/* the text stays white on the violet button: the page's link hover (violet text) must not reach it, in either theme */
+.hwc-primary:hover, .hwc-primary:focus-visible, :root[data-theme] .hwc-primary:hover, :root[data-theme] .hwc-primary:focus-visible { color: var(--accent-on-accent, #fff); }
 .hwc-primary .hwc-ico { width: 15px; height: 15px; }
 .hwc-text { display: inline-flex; align-items: center; gap: 6px; font: 700 13.5px var(--font-sans); color: var(--accent); background: none; border: 0; padding: 6px 2px; cursor: pointer; text-decoration: none; transition: color .18s ease; }
 .hwc-text:hover { color: var(--text); }

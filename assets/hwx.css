@@ -653,8 +653,15 @@ a:hover .act .go { gap: 10px; }
 /* guide (inline) and the marks on its pictures (also used by the full-window guide) */
 .hwx-guide-sec .hwx-sec-head { align-items: center; }
 .hwx-guide-pick { margin-bottom: 14px; flex-wrap: wrap; }
-.hwx-guide { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; }
+.hwx-guide { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
 @media (max-width: 860px) { .hwx-guide { grid-template-columns: 1fr; } }
+/* Step by step fits the screen (Bryan, 2026-11-26): at most 90% of the height left under the sticky
+   header and explorer bar. The picture's frame takes the picture's own shape (--ar, set when it
+   loads), so the marks drawn over it stay on their targets at any size. */
+.hwx-guide { --guide-max: calc((100vh - var(--hdr-h) - var(--hwx-nav-h, 110px)) * 0.9); }
+.hwx-guide .hw-shot { width: min(100%, calc((var(--guide-max) - 56px) * var(--ar, 1.6))); margin: 0 auto; }
+.hwx-steps { max-height: var(--guide-max); overflow: auto; overscroll-behavior: contain; padding-right: 2px; }
+@media (max-width: 860px) { .hwx-steps { max-height: none; } }
 .hw-shot { position: relative; border-radius: var(--r-card); background: var(--surface-2); }
 .hw-shot img { display: block; width: 100%; height: auto; border-radius: var(--r-card); border: 1px solid var(--line-role); box-shadow: var(--shadow); opacity: 0; transition: opacity .4s ease; }
 .hw-shot img.is-on { opacity: 1; }

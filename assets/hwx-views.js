@@ -1411,6 +1411,10 @@
       else HWX.render();
     });
     var rz = null;
+    /* the explorer bar's real height, for things sized to the space under the sticky bars */
+    var syncBars = function () { var n = document.querySelector('.hwx-nav'); if (n) document.documentElement.style.setProperty('--hwx-nav-h', n.offsetHeight + 'px'); };
+    syncBars(); setTimeout(syncBars, 600);
+    window.addEventListener('resize', syncBars, { passive: true });
     window.addEventListener('resize', function () { clearTimeout(rz); rz = setTimeout(function () { var r = parseRoute(); if (!ready()) return; if (r.view === 'line') drawRoad(list()); if (r.view === 'connections') drawGraph(list(), HWX._gAll); }, 200); }, { passive: true });
   }
   var lastGroup = null;

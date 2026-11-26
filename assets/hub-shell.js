@@ -299,7 +299,11 @@
     var i = spec.indexOf('|');
     img.removeAttribute('data-img');
     image(spec.slice(0, i), spec.slice(i + 1)).then(function (url) {
-      img.addEventListener('load', function () { img.classList.add('is-on'); }, { once: true });
+      img.addEventListener('load', function () {
+        img.classList.add('is-on');
+        var f = img.parentNode;
+        if (f && f.classList && f.classList.contains('hw-shot') && img.naturalWidth && img.naturalHeight) f.style.setProperty('--ar', (img.naturalWidth / img.naturalHeight).toFixed(4));
+      }, { once: true });
       img.src = url;
     }, function () { img.remove(); });
   }
