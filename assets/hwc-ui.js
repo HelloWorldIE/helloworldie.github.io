@@ -549,7 +549,7 @@
       toast(limit ? 'GitHub’s limit for signed-out visitors is reached. Sign in, or try again later.'
         : (st === 403 || st === 404) && app && !(app.installed && app.all && app.contents) ? 'GitHub would not show these files to the hub: the HelloWorldIE Hub app is not installed on this repo, or may not read files. Check it on GitHub under Settings, Applications.'
         : (st === 403 || st === 404) && !GH.hasToken ? 'This project is private. Sign in to look inside it.'
-        : 'The files of this project could not be read' + (st ? ' (GitHub answered ' + st + ')' : '') + '. Try again in a minute.', 'warn');
+        : 'The files of this project could not be read (' + (st ? 'GitHub answered ' + st : 'the browser said: ' + String((e && e.message) || e || 'no reason').slice(0, 80)) + '). Try again in a minute.', 'warn');
       if (!slideOn) play('notfound');
     });
   }
@@ -643,6 +643,7 @@
           (info.tagline ? '<p class="hwc-cp-s">' + esc(info.tagline) + '</p>' : '') + statusLine(info) +
           '<div class="hwc-cp-pills"><span class="hwc-pill is-kind">' + esc(info.kindLabel || 'Project') + '</span>' + tools + '</div>' +
           '<div class="hwc-cp-act"><a class="hwc-primary" href="' + href('p/' + enc(info.repo.name)) + '">Open the project page' + I('arrow') + '</a>' +
+          (info.view && GH.state && GH.state.signedIn ? '<button type="button" class="hwc-text" data-hwc="view" data-repo="' + esc(info.repo.name) + '">' + I('play') + esc(info.view.label) + '</button>' : '') +
           (info.demo ? '<button type="button" class="hwc-text" data-hwc="demo" data-repo="' + esc(info.repo.name) + '">' + I('play') + 'Try the demo</button>' : '') +
           '<button type="button" class="hwc-text" data-hwc="inside" data-repo="' + esc(info.repo.name) + '">' + I('folder') + 'Look inside</button>' +
           (info.live_url ? '<a class="hwc-text" href="' + esc(info.live_url) + '" target="_blank" rel="noopener noreferrer">' + I('ext') + 'Open the live site</a>' : '') + '</div>' +
@@ -828,6 +829,7 @@
     else if (a === 'select') { var n = el.getAttribute('data-repo'); if (city.level.kind !== 'estate') city.home(); city.select(n); if (matchMedia('(max-width: 760px)').matches) listToggle(false); }
     else if (a === 'hood') { if (city.level.kind !== 'estate') city.home(); city.selectHood(el.getAttribute('data-id')); }
     else if (a === 'inside') cityInside(el.getAttribute('data-repo'));
+    else if (a === 'view') { var shv = SH(), rv = el.getAttribute('data-repo'); if (shv && shv.openDemo) shv.openDemo(rv, { view: true, confirmFirst: false }); }
     else if (a === 'demo') { var sh = SH(), rn = el.getAttribute('data-repo'); if (sh && sh.openDemo) sh.openDemo(rn, { confirmFirst: false }); else go('p/' + enc(rn), { launch: 'demo' }); }
     else if (a === 'crumb') city.goCrumb(+el.getAttribute('data-i'));
     else if (a === 'up') city.up();

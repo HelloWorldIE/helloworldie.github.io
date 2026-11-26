@@ -101,7 +101,7 @@
       built_with: (g.built_with || []).slice(),
       live_url: g.live_url || null,
       runs: host ? [{ site: host, name: host }] : [],
-      demo: g.demo || null,
+      demo: g.demo || null, view: g.view || null,
       no_demo: g.no_demo || null,
       cover: g.cover || null,
       icon: g.icon || null,

@@ -504,12 +504,16 @@
     opts = opts || {};
     var r = GH.findRepo(name, { ci: true }); if (!r) return;
     var p = GH.info(r);
-    if (!p.demo) { toast('This project has no demo.', 'warn'); return; }
+    /* opts.view: the project itself (the card's `view`), with its real content, read with the
+       viewer's own access; it runs in exactly the same sealed frame as a demo. */
+    var isView = !!opts.view, file = isView ? (p.view && p.view.file) : p.demo;
+    if (!file) { toast(isView ? 'This project has nothing to open here.' : 'This project has no demo.', 'warn'); return; }
     var title = opts.title || p.title || r.name;
     var extra = '<a class="btn btn-quiet btn-sm" href="' + esc(r.html_url) + '" target="_blank" rel="noopener noreferrer">' + icon('gh') + 'Open on GitHub<span class="sr-only"> (opens in a new tab)</span></a>';
-    openFull(bar('Demo: ' + title, '<span class="hw-badge">Demo</span>', extra) +
-      '<div class="hw-demo-warn" role="note">' + icon('warn') + '<span>' + esc(DEMO_WARN) + '</span></div>' +
-      '<div class="hw-demo-stage" id="hw-demo-stage"></div>', 'Demo of ' + title, opts.onClose);
+    var warn = isView ? 'This is the project itself, with its real content, read with your own GitHub access. It runs sealed off: it cannot reach your sign-in or send anything anywhere.' : DEMO_WARN;
+    openFull(bar((isView ? '' : 'Demo: ') + title, '<span class="hw-badge">' + (isView ? 'Your access' : 'Demo') + '</span>', extra) +
+      '<div class="hw-demo-warn" role="note">' + icon('warn') + '<span>' + esc(warn) + '</span></div>' +
+      '<div class="hw-demo-stage" id="hw-demo-stage"></div>', (isView ? '' : 'Demo of ') + title, opts.onClose);
     var stage = $('#hw-demo-stage', full);
     if (!opts.confirmFirst) return loadDemo();
     stage.innerHTML = '<div class="hw-demo-confirm" role="group" aria-labelledby="hw-demo-q">' +
@@ -524,7 +528,7 @@
     go.addEventListener('click', loadDemo);
     var prov = $('.hw-demo-prov', stage);
     if (GH.lastCommitFor) {
-      Promise.resolve(GH.lastCommitFor(r.name, p.demo)).then(function (c) {
+      Promise.resolve(GH.lastCommitFor(r.name, file)).then(function (c) {
         if (!prov.isConnected) return;
         prov.textContent = c && (c.login || c.date)
           ? 'The demo was last changed' + (c.login ? ' by ' + c.login : '') + (c.date ? ' on ' + dateText(c.date, true) : '') + '.'
@@ -534,8 +538,8 @@
 
     function loadDemo() {
       var st = $('#hw-demo-stage', full); if (!st) return;
-      var l = loader(st, 'Opening the demo');
-      GH.fileText(r.name, p.demo).then(function (html) {
+      var l = loader(st, isView ? 'Opening ' + title : 'Opening the demo');
+      GH.fileText(r.name, file).then(function (html) {
         if (!full.open || !st.isConnected) return;
         var head = '<meta http-equiv="Content-Security-Policy" content="' + DEMO_POLICY + '"><script>' + DEMO_SHIM + '<\/script>';
         var m = html.match(/^\s*<!doctype[^>]*>/i);
@@ -554,7 +558,7 @@
       }, function (e) {
         if (!st.isConnected) return;
         l.done(false);
-        l.say(e.status === 404 ? 'The demo file ' + p.demo + ' is not in the repo.' : 'The demo could not be loaded. ' + (GH.state.signedIn ? 'Try again in a minute.' : 'It may be private: sign in to open it.'));
+        l.say(e.status === 404 ? 'The file ' + file + ' is not in the repo.' : (isView ? 'It' : 'The demo') + ' could not be loaded. ' + (GH.state.signedIn ? 'Try again in a minute.' : 'It may be private: sign in to open it.'));
       });
     }
   }

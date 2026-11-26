@@ -298,6 +298,7 @@ window.HW_CONFIG = {
     "image_kb": 900,
     "icon_kb": 20,
     "demo_kb": 3072,
+    "view_kb": 25600,
     "alt": 200,
     "mark_label": 60,
     "slug": 60

@@ -920,7 +920,8 @@
     var eyebrow = '<a href="' + (i.category ? catHref(i.category) : href('all', { cat: '_none' })) + '">' + esc(catLabel(i.category)) + '</a>' + (i.kind ? ' · ' + esc(kindLabel(i.kind)) : '');
     var note = [statusChip(i), when(i) ? '<span>Updated ' + esc(ago(when(i))) + '</span>' : '', i.updated ? '<span>Card checked ' + esc(SH.dateText(i.updated, true)) + '</span>' : ''].filter(Boolean).join('');
     var actions = '';
-    if (i.demo) actions += '<button type="button" class="btn btn-primary" data-demo="' + esc(r.name) + '">' + I('play') + 'Open the demo</button>';
+    if (i.view && GH.state.signedIn) actions += '<button type="button" class="btn btn-primary" data-open-view="' + esc(r.name) + '">' + I('play') + esc(i.view.label) + '</button>';
+    if (i.demo) actions += '<button type="button" class="btn ' + (i.view && GH.state.signedIn ? 'btn-quiet' : 'btn-primary') + '" data-demo="' + esc(r.name) + '">' + I('play') + 'Open the demo</button>';
     if (i.live_url) actions += '<a class="btn ' + (i.demo ? 'btn-quiet' : 'btn-primary') + '" href="' + esc(i.live_url) + '" target="_blank" rel="noopener noreferrer">' + I('ext') + 'Open the live site<span class="sr-only"> (opens in a new tab)</span></a>';
     actions += '<a class="btn ' + (i.demo || i.live_url ? 'btn-quiet' : 'btn-primary') + '" href="' + esc(r.html_url) + '" target="_blank" rel="noopener noreferrer">' + I('gh') + 'Open on GitHub<span class="sr-only"> (opens in a new tab)</span></a>';
     actions += '<button type="button" class="btn btn-quiet" data-copylink>' + I('link') + 'Copy link</button>';
@@ -1361,6 +1362,7 @@
       var t = e.target;
       if (t.closest('[data-signin]')) { e.preventDefault(); SH.openSignIn(); return; }
       if (t.closest('[data-retry]')) { GH.loadRepos(); return; }
+      var vw = t.closest('[data-open-view]'); if (vw) { e.preventDefault(); var vn = vw.getAttribute('data-open-view'), vi = byName(vn); SH.openDemo(vn, { view: true, title: vi ? vi.name : '' }); return; }
       var demo = t.closest('[data-demo]'); if (demo) { e.preventDefault(); var di = byName(demo.getAttribute('data-demo')); SH.openDemo(demo.getAttribute('data-demo'), { title: di ? di.name : '' }); return; }
       var lv = t.closest('[data-level]'); if (lv) { setLevel(lv.getAttribute('data-level')); return; }
       var sh = t.closest('[data-shelf]'); if (sh) { var tr = sh.parentNode.querySelector('.hwx-shelf-track'); tr.scrollBy({ left: +sh.getAttribute('data-shelf') * tr.clientWidth * .85, behavior: SH.reduced() ? 'auto' : 'smooth' }); return; }

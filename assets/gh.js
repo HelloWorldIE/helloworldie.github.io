@@ -539,6 +539,12 @@
     c.live_url = httpsUrl(P('live_url'));
     c.demo = typeof P('demo') === 'string' && /\.html?$/i.test(P('demo')) ? safePath(P('demo')) : null;
     c.no_demo = str(P('no_demo'), 240);
+    /* view: the project itself in one self-contained file, real content included (Bryan,
+       2026-11-26: "if you have access to the private repo, you should be able to preview it").
+       Opened like a demo, sealed off, with the viewer's own access. */
+    var V = P('view');
+    c.view = V && typeof V === 'object' && !Array.isArray(V) && typeof V.file === 'string' && /\.html?$/i.test(V.file) && safePath(V.file)
+      ? { file: safePath(V.file), label: str(V.label, 40) || 'Open it' } : null;
     c.cover = typeof P('cover') === 'string' && /\.(png|jpe?g|webp)$/i.test(P('cover')) ? safePath(P('cover')) : null;
     c.icon = typeof P('icon') === 'string' && /\.svg$/i.test(P('icon')) ? safePath(P('icon')) : null;
     c.same_as = typeof P('same_as') === 'string' && /^[A-Za-z0-9._-]{1,100}$/.test(P('same_as')) ? P('same_as') : null;
@@ -634,7 +640,7 @@
       features: c.features || [],
       built_with: c.built_with || [],
       languages: langs,
-      demo: demo, no_demo: c.no_demo || null,
+      demo: demo, no_demo: c.no_demo || null, view: c.view || null,
       live_url: live,
       cover: c.cover || null, icon: c.icon || null,
       gallery: c.gallery || [], guides: c.guides || [],
